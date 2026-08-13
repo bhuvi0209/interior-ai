@@ -1,8 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+import shutil
+import os
 
 app = FastAPI(title="Interior AI API")
 
+# Allow React frontend to communicate with FastAPI
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -11,6 +14,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Folder where uploaded images will be saved
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
 @app.get("/")
 def home():
-    return {"message": "Interior AI Backend is running 🚀"}
+    return {
+        "message": "Interior AI Backend is running 🚀"
+    }
+
+
+@app.post("/upload-room")
+async def upload_room(file: UploadFile = File(...)):
+
+    file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    return {
+        "message": "Room image uploaded successfully",
+        "filename": file.filename
+    }
