@@ -1,4 +1,8 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+} from "react-router-dom";
 
 import Home from "./pages/Home";
 import UploadRoom from "./pages/UploadRoom";
@@ -6,42 +10,50 @@ import StyleSelection from "./pages/StyleSelection";
 import FurnitureLibrary from "./pages/FurnitureLibrary";
 import RoomEditor from "./pages/RoomEditor";
 import Room3D from "./pages/Room3D";
+import ProjectSummary from "./pages/ProjectSummary";
+
 import Navbar from "./components/Navbar";
+import { ProjectProvider } from "./context/ProjectContext";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Navbar />
+    <ProjectProvider>
+      <BrowserRouter>
+        <Navbar />
 
-      <Routes>
-        <Route path="/" element={<Home />} />
+        <Routes>
+          <Route path="/" element={<Home />} />
 
-        <Route
-          path="/upload"
-          element={<UploadRoom />}
-        />
+          <Route
+            path="/upload"
+            element={<UploadRoom />}
+          />
+          <Route
+            path="/project"
+            element={<ProjectSummary />}
+          />
+          <Route
+            path="/style"
+            element={<StyleSelection />}
+          />
 
-        <Route
-          path="/style"
-          element={<StyleSelection />}
-        />
+          <Route
+            path="/furniture"
+            element={<FurnitureLibrary />}
+          />
 
-        <Route
-          path="/furniture"
-          element={<FurnitureLibrary />}
-        />
+          <Route
+            path="/editor"
+            element={<RoomEditor />}
+          />
 
-        <Route
-          path="/editor"
-          element={<RoomEditor />}
-        />
-
-        <Route
-          path="/3d"
-          element={<Room3D />}
-        />
-      </Routes>
-    </BrowserRouter>
+          <Route
+            path="/3d"
+            element={<Room3D />}
+          />
+        </Routes>
+      </BrowserRouter>
+    </ProjectProvider>
   );
 }
 
