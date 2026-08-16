@@ -2,36 +2,25 @@ import { useProject } from "../context/ProjectContext";
 
 function ProjectSummary() {
   const { project } = useProject();
-function ProjectSummary() {
-  const { project } = useProject();
-
-  console.log("PROJECT DATA:", project);
 
   return (
     <div style={{ padding: "40px" }}>
       <h1>Project Summary</h1>
 
-      {/* the rest of your code */}
-    </div>
-  );
-}
-  return (
-    <div style={{ padding: "40px" }}>
-      <h1>Project Summary</h1>
-
-      <h2>Room</h2>
+      <h2>Room Image</h2>
 
       {project.roomImage ? (
         <img
           src={project.roomImage}
-          alt="Room"
+          alt="Uploaded room"
           style={{
-            width: "400px",
+            width: "600px",
             maxWidth: "100%",
+            borderRadius: "10px",
           }}
         />
       ) : (
-        <p>No room image selected.</p>
+        <p>No image uploaded.</p>
       )}
 
       <h2>Style</h2>
@@ -42,15 +31,23 @@ function ProjectSummary() {
 
       <h2>Furniture</h2>
 
-      {project.furniture.length === 0 ? (
-        <p>No furniture added.</p>
-      ) : (
-        project.furniture.map((item) => (
-          <p key={item.id}>
-            {item.name} — X: {item.x}, Y: {item.y}
-          </p>
-        ))
-      )}
+      <p>
+        {project.furniture.length === 0
+          ? "No furniture added."
+          : `${project.furniture.length} furniture item(s)`}
+      </p>
+
+      <h2>Debug Project Data</h2>
+
+      <pre
+        style={{
+          background: "#f5f5f5",
+          padding: "20px",
+          overflow: "auto",
+        }}
+      >
+        {JSON.stringify(project, null, 2)}
+      </pre>
     </div>
   );
 }

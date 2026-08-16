@@ -35,6 +35,7 @@ async def upload_room(file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
 
     return {
-        "message": "Room image uploaded successfully",
-        "filename": file.filename
+    "message": "Room image uploaded successfully",
+    "filename": file.filename,
+    "image_url": f"/uploads/{file.filename}"
     }

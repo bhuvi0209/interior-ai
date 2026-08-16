@@ -41,11 +41,12 @@ function StyleSelection() {
             onClick={() => {
               setSelectedStyle(style);
 
-              setProject({
-                ...project,
+              setProject((prev) => ({
+                ...prev,
                 style: style,
-              });
+              }));
           }}
+
             style={{
               padding: "20px 30px",
               borderRadius: "10px",

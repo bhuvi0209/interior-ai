@@ -24,14 +24,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
 
-          <Route
-            path="/upload"
-            element={<UploadRoom />}
-          />
-          <Route
-            path="/project"
-            element={<ProjectSummary />}
-          />
+          <Route path="/upload" element={<UploadRoom />} />
+
           <Route
             path="/style"
             element={<StyleSelection />}
@@ -47,9 +41,11 @@ function App() {
             element={<RoomEditor />}
           />
 
+          <Route path="/3d" element={<Room3D />} />
+
           <Route
-            path="/3d"
-            element={<Room3D />}
+            path="/project"
+            element={<ProjectSummary />}
           />
         </Routes>
       </BrowserRouter>

@@ -1,53 +1,63 @@
 import { useState } from "react";
-import api from "../services/api";
+import { useNavigate } from "react-router-dom";
+
+import { useProject } from "../context/ProjectContext";
 
 function UploadRoom() {
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string>("");
-  const [message, setMessage] = useState<string>("");
+  const [preview, setPreview] = useState("");
+
+  const { setProject } = useProject();
+
+  const navigate = useNavigate();
 
   const handleFileChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const selectedFile = event.target.files?.[0];
+    const file = event.target.files?.[0];
 
-    if (!selectedFile) {
+    if (!file) {
       return;
     }
 
-    setFile(selectedFile);
+    const reader = new FileReader();
 
-    const imageUrl = URL.createObjectURL(selectedFile);
-    setPreview(imageUrl);
+    reader.onload = () => {
+      const imageData = reader.result as string;
 
-    setMessage("");
+      setPreview(imageData);
+
+      setProject((currentProject) => ({
+        ...currentProject,
+        roomImage: imageData,
+      }));
+    };
+
+    reader.readAsDataURL(file);
   };
 
-  const handleUpload = async () => {
-    if (!file) {
-      setMessage("Please select a room image first.");
+  const handleContinue = () => {
+    if (!preview) {
+      alert("Please select a room image first.");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const response = await api.post(
-        "/upload-room",
-        formData
-      );
-
-      setMessage(response.data.message);
-    } catch (error) {
-      console.error(error);
-      setMessage("Upload failed.");
-    }
+    navigate("/style");
   };
 
   return (
-    <div style={{ padding: "40px" }}>
+    <div
+      style={{
+        padding: "40px",
+        maxWidth: "800px",
+        margin: "auto",
+      }}
+    >
       <h1>Upload Your Room</h1>
+
+      <p>
+        Select an image of the room you want to
+        redesign.
+      </p>
 
       <input
         type="file"
@@ -56,31 +66,32 @@ function UploadRoom() {
       />
 
       {preview && (
-        <div style={{ marginTop: "20px" }}>
-          <h2>Preview</h2>
+        <div style={{ marginTop: "30px" }}>
+          <h2>Room Preview</h2>
 
           <img
             src={preview}
-            alt="Room preview"
+            alt="Uploaded room"
             style={{
-              width: "500px",
+              width: "600px",
               maxWidth: "100%",
+              borderRadius: "10px",
             }}
           />
         </div>
       )}
 
-      <div style={{ marginTop: "20px" }}>
-        <button onClick={handleUpload}>
-          Upload Room
-        </button>
-      </div>
-
-      {message && (
-        <p style={{ marginTop: "20px" }}>
-          {message}
-        </p>
-      )}
+      <button
+        onClick={handleContinue}
+        disabled={!preview}
+        style={{
+          marginTop: "25px",
+          padding: "12px 25px",
+          fontSize: "16px",
+        }}
+      >
+        Continue
+      </button>
     </div>
   );
 }

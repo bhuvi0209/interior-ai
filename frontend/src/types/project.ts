@@ -1,12 +1,12 @@
-export type FurnitureItem = {
+export interface FurnitureItem {
   id: number;
   name: string;
   x: number;
   y: number;
-};
+}
 
-export type Project = {
+export interface Project {
   roomImage: string;
   style: string;
   furniture: FurnitureItem[];
-};
+}
