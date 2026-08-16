@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useProject } from "../context/ProjectContext";
 
 type Furniture = {
   id: number;
@@ -74,11 +75,34 @@ function FurnitureLibrary() {
   const [selectedFurniture, setSelectedFurniture] =
     useState<Furniture | null>(null);
 
+  const { project, setProject } = useProject();
+
   const categories = [
     "Living Room",
     "Bedroom",
     "Decor",
   ];
+
+  const addFurnitureToProject = (
+    furniture: Furniture
+  ) => {
+    const newFurniture = {
+      id: Date.now(),
+      name: furniture.name,
+      x: 300,
+      y: 200,
+    };
+
+    setProject({
+      ...project,
+      furniture: [
+        ...project.furniture,
+        newFurniture,
+      ],
+    });
+
+    setSelectedFurniture(furniture);
+  };
 
   return (
     <div
@@ -94,12 +118,16 @@ function FurnitureLibrary() {
       </p>
 
       {categories.map((category) => {
-        const categoryItems = furnitureItems.filter(
-          (item) => item.category === category
-        );
+        const categoryItems =
+          furnitureItems.filter(
+            (item) => item.category === category
+          );
 
         return (
-          <div key={category} style={{ marginTop: "40px" }}>
+          <div
+            key={category}
+            style={{ marginTop: "40px" }}
+          >
             <h2>{category}</h2>
 
             <div
@@ -113,7 +141,7 @@ function FurnitureLibrary() {
                 <button
                   key={item.id}
                   onClick={() =>
-                    setSelectedFurniture(item)
+                    addFurnitureToProject(item)
                   }
                   style={{
                     width: "180px",
@@ -135,6 +163,15 @@ function FurnitureLibrary() {
                   </div>
 
                   <strong>{item.name}</strong>
+
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      fontSize: "13px",
+                    }}
+                  >
+                    Add to Project
+                  </div>
                 </button>
               ))}
             </div>
@@ -151,18 +188,35 @@ function FurnitureLibrary() {
             borderRadius: "12px",
           }}
         >
-          <h2>Selected Furniture</h2>
+          <h2>Added Furniture</h2>
 
           <p>
             {selectedFurniture.emoji}{" "}
             {selectedFurniture.name}
           </p>
-
-          <p>
-            Category: {selectedFurniture.category}
-          </p>
         </div>
       )}
+
+      <div
+        style={{
+          marginTop: "40px",
+          padding: "20px",
+          background: "#f5f5f5",
+          borderRadius: "10px",
+        }}
+      >
+        <h2>Project Furniture</h2>
+
+        {project.furniture.length === 0 ? (
+          <p>No furniture added yet.</p>
+        ) : (
+          project.furniture.map((item) => (
+            <p key={item.id}>
+              {item.name} — X: {item.x}, Y: {item.y}
+            </p>
+          ))
+        )}
+      </div>
     </div>
   );
 }
