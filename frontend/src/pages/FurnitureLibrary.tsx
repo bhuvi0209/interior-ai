@@ -89,8 +89,8 @@ function FurnitureLibrary() {
     const newFurniture = {
       id: Date.now(),
       name: furniture.name,
-      x: 300,
-      y: 200,
+      x: 100 + (project.furniture.length % 5) * 120,
+      y: 100 + Math.floor(project.furniture.length / 5) * 120,
     };
 
     setProject({

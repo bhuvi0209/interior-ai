@@ -1,218 +1,240 @@
-import { useState } from "react";
-import { Stage, Layer, Rect, Text, Group } from "react-konva";
+import { useEffect, useState } from "react";
+import {
+  Stage,
+  Layer,
+  Image as KonvaImage,
+  Text,
+  Rect,
+} from "react-konva";
 
-type FurnitureItem = {
-  id: number;
-  name: string;
-  x: number;
-  y: number;
-};
+import useImage from "use-image";
+
+import { useProject } from "../context/ProjectContext";
+
+function RoomBackground({
+  imageUrl,
+  width,
+  height,
+}: {
+  imageUrl: string;
+  width: number;
+  height: number;
+}) {
+  const [image] = useImage(imageUrl);
+
+  if (!image) {
+    return null;
+  }
+
+  return (
+    <KonvaImage
+      image={image}
+      x={0}
+      y={0}
+      width={width}
+      height={height}
+    />
+  );
+}
 
 function RoomEditor() {
-  const [furniture, setFurniture] = useState<FurnitureItem[]>([]);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const { project, setProject } = useProject();
 
-  const addFurniture = (name: string) => {
-    const newFurniture: FurnitureItem = {
-      id: Date.now(),
-      name,
-      x: 300,
-      y: 200,
-    };
+  const [selectedId, setSelectedId] =
+    useState<number | null>(null);
 
-    setFurniture([...furniture, newFurniture]);
-  };
+  const canvasWidth = 800;
+  const canvasHeight = 500;
 
-  const moveFurniture = (
+  useEffect(() => {
+    console.log("Current project:", project);
+  }, [project]);
+
+  const handleDragEnd = (
     id: number,
     x: number,
     y: number
   ) => {
-    setFurniture((items) =>
-      items.map((item) =>
-        item.id === id
-          ? { ...item, x, y }
-          : item
-      )
-    );
-  };
+    setProject((currentProject) => ({
+      ...currentProject,
 
-  const deleteFurniture = () => {
-    if (selectedId === null) {
-      return;
-    }
-
-    setFurniture((items) =>
-      items.filter((item) => item.id !== selectedId)
-    );
-
-    setSelectedId(null);
+      furniture: currentProject.furniture.map(
+        (item) =>
+          item.id === id
+            ? {
+                ...item,
+                x,
+                y,
+              }
+            : item
+      ),
+    }));
   };
 
   return (
     <div
       style={{
-        display: "flex",
-        height: "100vh",
-        fontFamily: "Arial",
+        padding: "30px",
       }}
     >
-      {/* Furniture Sidebar */}
+      <h1>2D Room Editor</h1>
+
+      <p>
+        Drag furniture around the room to create
+        your layout.
+      </p>
+
+      {!project.roomImage && (
+        <div
+          style={{
+            padding: "20px",
+            background: "#fff3cd",
+            marginBottom: "20px",
+          }}
+        >
+          Please upload a room image first.
+        </div>
+      )}
 
       <div
         style={{
-          width: "220px",
-          padding: "20px",
-          borderRight: "1px solid #ddd",
+          border: "2px solid #333",
+          width: canvasWidth,
+          maxWidth: "100%",
         }}
       >
-        <h2>Furniture</h2>
-
-        <button
-          onClick={() => addFurniture("Sofa")}
-          style={{
-            display: "block",
-            width: "100%",
-            padding: "12px",
-            marginBottom: "10px",
-          }}
-        >
-          🛋️ Sofa
-        </button>
-
-        <button
-          onClick={() => addFurniture("Chair")}
-          style={{
-            display: "block",
-            width: "100%",
-            padding: "12px",
-            marginBottom: "10px",
-          }}
-        >
-          🪑 Chair
-        </button>
-
-        <button
-          onClick={() => addFurniture("Bed")}
-          style={{
-            display: "block",
-            width: "100%",
-            padding: "12px",
-            marginBottom: "10px",
-          }}
-        >
-          🛏️ Bed
-        </button>
-
-        <button
-          onClick={() => addFurniture("Table")}
-          style={{
-            display: "block",
-            width: "100%",
-            padding: "12px",
-            marginBottom: "10px",
-          }}
-        >
-          🟫 Table
-        </button>
-
-        <button
-          onClick={deleteFurniture}
-          disabled={selectedId === null}
-          style={{
-            display: "block",
-            width: "100%",
-            padding: "12px",
-            marginTop: "30px",
-          }}
-        >
-          Delete Selected
-        </button>
-      </div>
-
-      {/* Room Canvas */}
-
-      <div
-        style={{
-          flex: 1,
-          padding: "20px",
-          background: "#f5f5f5",
-        }}
-      >
-        <h1>2D Room Editor</h1>
-
         <Stage
-          width={800}
-          height={550}
-          style={{
-            background: "white",
-            border: "2px solid #333",
-          }}
+          width={canvasWidth}
+          height={canvasHeight}
         >
           <Layer>
-            {/* Room */}
+            {project.roomImage && (
+              <RoomBackground
+                imageUrl={project.roomImage}
+                width={canvasWidth}
+                height={canvasHeight}
+              />
+            )}
 
-            <Rect
-              x={20}
-              y={20}
-              width={750}
-              height={500}
-              stroke="black"
-              strokeWidth={3}
-            />
+            {!project.roomImage && (
+              <Rect
+                x={0}
+                y={0}
+                width={canvasWidth}
+                height={canvasHeight}
+                fill="#eeeeee"
+              />
+            )}
 
-            <Text
-              x={40}
-              y={40}
-              text="Room"
-              fontSize={20}
-            />
+            {!project.roomImage && (
+              <Text
+                text="Upload a room image first"
+                x={280}
+                y={230}
+                fontSize={20}
+              />
+            )}
 
-            {/* Furniture */}
-
-            {furniture.map((item) => (
-              <Group
+            {project.furniture.map((item) => (
+              <Text
                 key={item.id}
+                text={getFurnitureEmoji(item.name)}
                 x={item.x}
                 y={item.y}
+                fontSize={50}
                 draggable
                 onClick={() =>
                   setSelectedId(item.id)
                 }
+                onTap={() =>
+                  setSelectedId(item.id)
+                }
                 onDragEnd={(event) => {
-                  moveFurniture(
+                  handleDragEnd(
                     item.id,
                     event.target.x(),
                     event.target.y()
                   );
                 }}
-              >
-                <Rect
-                  width={120}
-                  height={70}
-                  fill={
-                    selectedId === item.id
-                      ? "lightblue"
-                      : "lightgray"
-                  }
-                  stroke="black"
-                />
-
-                <Text
-                  text={item.name}
-                  width={120}
-                  height={70}
-                  align="center"
-                  verticalAlign="middle"
-                  fontSize={16}
-                />
-              </Group>
+              />
             ))}
           </Layer>
         </Stage>
       </div>
+
+      <div
+        style={{
+          marginTop: "25px",
+          padding: "20px",
+          background: "#f5f5f5",
+          borderRadius: "10px",
+        }}
+      >
+        <h2>Furniture</h2>
+
+        {project.furniture.length === 0 ? (
+          <p>
+            No furniture added. Go to the Furniture
+            Library and add some items.
+          </p>
+        ) : (
+          project.furniture.map((item) => (
+            <div key={item.id}>
+              {getFurnitureEmoji(item.name)}{" "}
+              {item.name}
+
+              {" — X: "}
+              {Math.round(item.x)}
+
+              {" Y: "}
+              {Math.round(item.y)}
+
+              {selectedId === item.id && (
+                <strong> ← Selected</strong>
+              )}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
+}
+
+function getFurnitureEmoji(name: string) {
+  switch (name) {
+    case "Sofa":
+      return "🛋️";
+
+    case "Coffee Table":
+      return "🪑";
+
+    case "TV Unit":
+      return "📺";
+
+    case "Chair":
+      return "💺";
+
+    case "Bed":
+      return "🛏️";
+
+    case "Wardrobe":
+      return "🚪";
+
+    case "Nightstand":
+      return "🗄️";
+
+    case "Rug":
+      return "🟫";
+
+    case "Lamp":
+      return "💡";
+
+    case "Plant":
+      return "🪴";
+
+    default:
+      return "⬜";
+  }
 }
 
 export default RoomEditor;
