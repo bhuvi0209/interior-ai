@@ -5,21 +5,12 @@ import {
   Image as KonvaImage,
   Text,
   Rect,
-  Transformer,
+  Line,
 } from "react-konva";
 
 import useImage from "use-image";
 
 import { useProject } from "../context/ProjectContext";
-
-type FurnitureObjectProps = {
-  id: number;
-  name: string;
-  x: number;
-  y: number;
-  rotation?: number;
-  scale?: number;
-};
 
 function RoomBackground({
   imageUrl,
@@ -53,6 +44,10 @@ function RoomEditor() {
   const [selectedId, setSelectedId] =
     useState<number | null>(null);
 
+  const [zoom, setZoom] = useState(1);
+
+  const [showGrid, setShowGrid] = useState(true);
+
   const canvasWidth = 800;
   const canvasHeight = 500;
 
@@ -63,7 +58,7 @@ function RoomEditor() {
 
   const updateFurniture = (
     id: number,
-    changes: Partial<FurnitureObjectProps>
+    changes: any
   ) => {
     setProject((currentProject) => ({
       ...currentProject,
@@ -131,13 +126,102 @@ function RoomEditor() {
     <div
       style={{
         padding: "30px",
+        fontFamily: "Arial",
       }}
     >
       <h1>2D Room Editor</h1>
 
       <p>
-        Select and arrange your furniture.
+        Arrange your furniture and create your room
+        layout.
       </p>
+
+      {/* TOOLBAR */}
+
+      <div
+        style={{
+          display: "flex",
+          gap: "10px",
+          flexWrap: "wrap",
+          marginBottom: "20px",
+        }}
+      >
+        <button
+          onClick={() =>
+            setZoom((value) =>
+              Math.min(value + 0.1, 2)
+            )
+          }
+        >
+          🔍 +
+        </button>
+
+        <button
+          onClick={() =>
+            setZoom((value) =>
+              Math.max(value - 0.1, 0.5)
+            )
+          }
+        >
+          🔍 -
+        </button>
+
+        <button
+          onClick={() => setZoom(1)}
+        >
+          Reset Zoom
+        </button>
+
+        <button
+          onClick={() =>
+            setShowGrid((value) => !value)
+          }
+        >
+          {showGrid
+            ? "Hide Grid"
+            : "Show Grid"}
+        </button>
+
+        <button
+          onClick={() => setSelectedId(null)}
+        >
+          Clear Selection
+        </button>
+
+        {selectedFurniture && (
+          <>
+            <button
+              onClick={rotateFurniture}
+            >
+              ↻ Rotate
+            </button>
+
+            <button
+              onClick={() =>
+                resizeFurniture(0.1)
+              }
+            >
+              ＋ Size
+            </button>
+
+            <button
+              onClick={() =>
+                resizeFurniture(-0.1)
+              }
+            >
+              － Size
+            </button>
+
+            <button
+              onClick={deleteFurniture}
+            >
+              🗑 Delete
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* MAIN EDITOR */}
 
       <div
         style={{
@@ -151,20 +235,26 @@ function RoomEditor() {
         <div
           style={{
             border: "2px solid #333",
+            overflow: "hidden",
           }}
         >
           <Stage
             width={canvasWidth}
             height={canvasHeight}
+            scaleX={zoom}
+            scaleY={zoom}
             onMouseDown={(event) => {
               if (
-                event.target === event.target.getStage()
+                event.target ===
+                event.target.getStage()
               ) {
                 setSelectedId(null);
               }
             }}
           >
             <Layer>
+              {/* ROOM IMAGE */}
+
               {project.roomImage && (
                 <RoomBackground
                   imageUrl={project.roomImage}
@@ -180,7 +270,6 @@ function RoomEditor() {
                     y={0}
                     width={canvasWidth}
                     height={canvasHeight}
-                    fill="#eeeeee"
                   />
 
                   <Text
@@ -191,6 +280,16 @@ function RoomEditor() {
                   />
                 </>
               )}
+
+              {/* GRID */}
+
+              {showGrid &&
+                createGrid(
+                  canvasWidth,
+                  canvasHeight
+                )}
+
+              {/* FURNITURE */}
 
               {project.furniture.map((item) => (
                 <Text
@@ -210,10 +309,13 @@ function RoomEditor() {
                     setSelectedId(item.id)
                   }
                   onDragEnd={(event) => {
-                    updateFurniture(item.id, {
-                      x: event.target.x(),
-                      y: event.target.y(),
-                    });
+                    updateFurniture(
+                      item.id,
+                      {
+                        x: event.target.x(),
+                        y: event.target.y(),
+                      }
+                    );
                   }}
                 />
               ))}
@@ -221,7 +323,7 @@ function RoomEditor() {
           </Stage>
         </div>
 
-        {/* PROPERTIES PANEL */}
+        {/* PROPERTIES */}
 
         <div
           style={{
@@ -229,14 +331,13 @@ function RoomEditor() {
             padding: "20px",
             border: "1px solid #ddd",
             borderRadius: "10px",
-            background: "#fafafa",
           }}
         >
           <h2>Properties</h2>
 
           {!selectedFurniture && (
             <p>
-              Select a furniture item to edit it.
+              Select furniture to edit it.
             </p>
           )}
 
@@ -249,20 +350,22 @@ function RoomEditor() {
                 {selectedFurniture.name}
               </h3>
 
-              <hr />
-
               <p>
-                <strong>X:</strong>{" "}
-                {Math.round(selectedFurniture.x)}
+                X:{" "}
+                {Math.round(
+                  selectedFurniture.x
+                )}
               </p>
 
               <p>
-                <strong>Y:</strong>{" "}
-                {Math.round(selectedFurniture.y)}
+                Y:{" "}
+                {Math.round(
+                  selectedFurniture.y
+                )}
               </p>
 
               <p>
-                <strong>Rotation:</strong>{" "}
+                Rotation:{" "}
                 {Math.round(
                   selectedFurniture.rotation ?? 0
                 )}
@@ -270,58 +373,87 @@ function RoomEditor() {
               </p>
 
               <p>
-                <strong>Scale:</strong>{" "}
-                {(selectedFurniture.scale ?? 1).toFixed(
-                  1
-                )}
+                Scale:{" "}
+                {(
+                  selectedFurniture.scale ?? 1
+                ).toFixed(1)}
               </p>
-
-              <hr />
-
-              <button
-                onClick={rotateFurniture}
-                style={buttonStyle}
-              >
-                Rotate 15°
-              </button>
-
-              <button
-                onClick={() => resizeFurniture(0.1)}
-                style={buttonStyle}
-              >
-                Increase Size
-              </button>
-
-              <button
-                onClick={() => resizeFurniture(-0.1)}
-                style={buttonStyle}
-              >
-                Decrease Size
-              </button>
-
-              <button
-                onClick={deleteFurniture}
-                style={{
-                  ...buttonStyle,
-                  marginTop: "20px",
-                }}
-              >
-                Delete
-              </button>
             </>
           )}
         </div>
+      </div>
+
+      {/* PROJECT INFORMATION */}
+
+      <div
+        style={{
+          marginTop: "30px",
+          padding: "20px",
+          background: "#f5f5f5",
+          borderRadius: "10px",
+        }}
+      >
+        <h2>Furniture in Project</h2>
+
+        {project.furniture.length === 0 ? (
+          <p>
+            No furniture added yet.
+          </p>
+        ) : (
+          project.furniture.map((item) => (
+            <div key={item.id}>
+              {getFurnitureEmoji(item.name)}{" "}
+              {item.name}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
 }
 
-const buttonStyle = {
-  width: "100%",
-  padding: "10px",
-  marginTop: "10px",
-  cursor: "pointer",
-};
+function createGrid(
+  width: number,
+  height: number
+) {
+  const lines = [];
+
+  const gridSize = 50;
+
+  for (
+    let x = 0;
+    x <= width;
+    x += gridSize
+  ) {
+    lines.push(
+      <Line
+        key={`vertical-${x}`}
+        points={[x, 0, x, height]}
+        stroke="#cccccc"
+        strokeWidth={1}
+        listening={false}
+      />
+    );
+  }
+
+  for (
+    let y = 0;
+    y <= height;
+    y += gridSize
+  ) {
+    lines.push(
+      <Line
+        key={`horizontal-${y}`}
+        points={[0, y, width, y]}
+        stroke="#cccccc"
+        strokeWidth={1}
+        listening={false}
+      />
+    );
+  }
+
+  return lines;
+}
 
 function getFurnitureEmoji(name: string) {
   switch (name) {

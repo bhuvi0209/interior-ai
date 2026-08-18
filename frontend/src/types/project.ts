@@ -5,6 +5,7 @@ export interface FurnitureItem {
   y: number;
   rotation?: number;
   scale?: number;
+  emoji?: string;
 }
 
 export interface Project {

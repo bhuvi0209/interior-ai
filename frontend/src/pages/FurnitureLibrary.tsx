@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useProject } from "../context/ProjectContext";
 
-type Furniture = {
+type ProjectFurniture = {
   id: number;
   name: string;
-  category: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
   emoji: string;
 };
 
