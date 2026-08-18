@@ -3,6 +3,8 @@ export interface FurnitureItem {
   name: string;
   x: number;
   y: number;
+  rotation?: number;
+  scale?: number;
 }
 
 export interface Project {
