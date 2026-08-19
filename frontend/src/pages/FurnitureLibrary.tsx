@@ -1,73 +1,70 @@
 import { useState } from "react";
 import { useProject } from "../context/ProjectContext";
 
-type ProjectFurniture = {
-  id: number;
+type Furniture = {
+  id: string;
   name: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  category: string;
   emoji: string;
 };
 
 const furnitureItems: Furniture[] = [
   {
-    id: 1,
+    id: "1",
     name: "Sofa",
     category: "Living Room",
     emoji: "🛋️",
   },
   {
-    id: 2,
+    id: "2",
     name: "Coffee Table",
     category: "Living Room",
     emoji: "🪑",
   },
   {
-    id: 3,
+    id: "3",
     name: "TV Unit",
     category: "Living Room",
     emoji: "📺",
   },
   {
-    id: 4,
+    id: "4",
     name: "Chair",
     category: "Living Room",
     emoji: "💺",
   },
   {
-    id: 5,
+    id: "5",
     name: "Bed",
     category: "Bedroom",
     emoji: "🛏️",
   },
   {
-    id: 6,
+    id: "6",
     name: "Wardrobe",
     category: "Bedroom",
     emoji: "🚪",
   },
   {
-    id: 7,
+    id: "7",
     name: "Nightstand",
     category: "Bedroom",
     emoji: "🗄️",
   },
   {
-    id: 8,
+    id: "8",
     name: "Rug",
     category: "Decor",
     emoji: "🟫",
   },
   {
-    id: 9,
+    id: "9",
     name: "Lamp",
     category: "Decor",
     emoji: "💡",
   },
   {
-    id: 10,
+    id: "10",
     name: "Plant",
     category: "Decor",
     emoji: "🪴",
@@ -87,25 +84,29 @@ function FurnitureLibrary() {
   ];
 
   const addFurnitureToProject = (
-    furniture: Furniture
-  ) => {
-    const newFurniture = {
-      id: Date.now(),
-      name: furniture.name,
-      x: 100 + (project.furniture.length % 5) * 120,
-      y: 100 + Math.floor(project.furniture.length / 5) * 120,
-    };
-
-    setProject({
-      ...project,
-      furniture: [
-        ...project.furniture,
-        newFurniture,
-      ],
-    });
-
-    setSelectedFurniture(furniture);
+  furniture: Furniture
+) => {
+  const newFurniture = {
+    id: Date.now(),
+    name: furniture.name,
+    x:
+      100 +
+      (project.furniture.length % 5) * 120,
+    y:
+      100 +
+      Math.floor(project.furniture.length / 5) * 120,
   };
+
+  setProject((prev) => ({
+    ...prev,
+    furniture: [
+      ...prev.furniture,
+      newFurniture,
+    ],
+  }));
+
+  setSelectedFurniture(furniture);
+};
 
   return (
     <div

@@ -1,11 +1,44 @@
 import { useProject } from "../context/ProjectContext";
 
 function ProjectSummary() {
-  const { project } = useProject();
+  const { project, setProject } = useProject();
+
+  const startNewProject = () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to start a new project?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setProject({
+      roomImage: "",
+      style: "",
+      furniture: [],
+    });
+  };
 
   return (
     <div style={{ padding: "40px" }}>
       <h1>Project Summary</h1>
+
+      {/* START NEW PROJECT */}
+
+      <button
+        onClick={startNewProject}
+        style={{
+          padding: "12px 20px",
+          marginBottom: "30px",
+          background: "#222",
+          color: "white",
+          border: "none",
+          borderRadius: "8px",
+          cursor: "pointer",
+        }}
+      >
+        Start New Project
+      </button>
 
       <h2>Room Image</h2>
 

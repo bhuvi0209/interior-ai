@@ -2,10 +2,19 @@ import {
   createContext,
   useContext,
   useState,
-  ReactNode,
+  type ReactNode,
 } from "react";
 
-import type { Project } from "../types/Project";
+import type { Project } from "../types/project";
+
+interface ProjectContextType {
+  project: Project;
+  setProject: React.Dispatch<React.SetStateAction<Project>>;
+}
+
+const ProjectContext = createContext<ProjectContextType | undefined>(
+  undefined
+);
 
 const defaultProject: Project = {
   roomImage: "",
@@ -13,54 +22,45 @@ const defaultProject: Project = {
   furniture: [],
 };
 
-type ProjectContextType = {
-  project: Project;
-  setProject: React.Dispatch<React.SetStateAction<Project>>;
-};
-
-const ProjectContext =
-  createContext<ProjectContextType | undefined>(undefined);
-
 export function ProjectProvider({
   children,
 }: {
   children: ReactNode;
 }) {
-  const [project, setProject] = useState<Project>(() => {
-    const savedProject = localStorage.getItem("interiorProject");
+  const [project, setProjectState] = useState<Project>(() => {
+    const savedProject = localStorage.getItem("interior-ai-project");
 
     if (savedProject) {
-      return JSON.parse(savedProject);
+      try {
+        return JSON.parse(savedProject);
+      } catch {
+        return defaultProject;
+      }
     }
 
     return defaultProject;
   });
 
-  const updateProject: React.Dispatch<
+  const setProject: React.Dispatch<
     React.SetStateAction<Project>
   > = (value) => {
-    setProject((currentProject) => {
-      const newProject =
+    setProjectState((currentProject) => {
+      const updatedProject =
         typeof value === "function"
           ? value(currentProject)
           : value;
 
       localStorage.setItem(
-        "interiorProject",
-        JSON.stringify(newProject)
+        "interior-ai-project",
+        JSON.stringify(updatedProject)
       );
 
-      return newProject;
+      return updatedProject;
     });
   };
 
   return (
-    <ProjectContext.Provider
-      value={{
-        project,
-        setProject: updateProject,
-      }}
-    >
+    <ProjectContext.Provider value={{ project, setProject }}>
       {children}
     </ProjectContext.Provider>
   );

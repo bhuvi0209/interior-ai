@@ -1,9 +1,9 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import shutil
 import os
 
-app = FastAPI(title="Interior AI API")
+app = FastAPI()
 
 # Allow React frontend to communicate with FastAPI
 app.add_middleware(
@@ -20,7 +20,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 @app.get("/")
-def home():
+def root():
     return {
         "message": "Interior AI Backend is running 🚀"
     }

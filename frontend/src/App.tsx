@@ -3,7 +3,7 @@ import {
   Routes,
   Route,
 } from "react-router-dom";
-
+import { ProjectProvider } from "./context/ProjectContext";
 import Home from "./pages/Home";
 import UploadRoom from "./pages/UploadRoom";
 import StyleSelection from "./pages/StyleSelection";
@@ -13,7 +13,6 @@ import Room3D from "./pages/Room3D";
 import ProjectSummary from "./pages/ProjectSummary";
 
 import Navbar from "./components/Navbar";
-import { ProjectProvider } from "./context/ProjectContext";
 
 function App() {
   return (

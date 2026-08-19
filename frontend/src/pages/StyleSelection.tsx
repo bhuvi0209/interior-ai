@@ -10,7 +10,7 @@ const styles = [
 ];
 
 function StyleSelection() {
-  const { project, setProject } = useProject();
+  const { setProject } = useProject();
   const [selectedStyle, setSelectedStyle] = useState("");
 
   return (
