@@ -3,13 +3,13 @@ import {
   Routes,
   Route,
 } from "react-router-dom";
+import ThreeDView from "./pages/ThreeDView";
 import { ProjectProvider } from "./context/ProjectContext";
 import Home from "./pages/Home";
 import UploadRoom from "./pages/UploadRoom";
 import StyleSelection from "./pages/StyleSelection";
 import FurnitureLibrary from "./pages/FurnitureLibrary";
 import RoomEditor from "./pages/RoomEditor";
-import Room3D from "./pages/Room3D";
 import ProjectSummary from "./pages/ProjectSummary";
 
 import Navbar from "./components/Navbar";
@@ -40,7 +40,10 @@ function App() {
             element={<RoomEditor />}
           />
 
-          <Route path="/3d" element={<Room3D />} />
+          <Route 
+            path="/3d" 
+            element={<ThreeDView />} 
+          />
 
           <Route
             path="/project"
