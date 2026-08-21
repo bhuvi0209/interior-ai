@@ -1,8 +1,10 @@
 import { Canvas } from "@react-three/fiber";
+
 import {
   OrbitControls,
   Grid,
   Environment,
+  useGLTF,
 } from "@react-three/drei";
 
 import { useProject } from "../context/ProjectContext";
@@ -13,6 +15,7 @@ interface Furniture3DProps {
   y: number;
   rotation?: number;
   scale?: number;
+  model3D?: string;
 }
 
 function Floor() {
@@ -31,15 +34,11 @@ function Floor() {
 function Walls() {
   return (
     <>
-      {/* Back wall */}
-
       <mesh position={[0, 2, -4]}>
         <boxGeometry args={[12, 4, 0.2]} />
 
         <meshStandardMaterial color="#eeeeee" />
       </mesh>
-
-      {/* Left wall */}
 
       <mesh position={[-6, 2, 0]}>
         <boxGeometry args={[0.2, 4, 8]} />
@@ -50,29 +49,26 @@ function Walls() {
   );
 }
 
+function RealFurnitureModel({
+  model3D,
+}: {
+  model3D: string;
+}) {
+  const { scene } = useGLTF(model3D);
+
+  return <primitive object={scene} />;
+}
+
 function Furniture3D({
   name,
   x,
   y,
   rotation = 0,
   scale = 1,
+  model3D,
 }: Furniture3DProps) {
-  /*
-    Our 2D editor uses:
-
-    x = horizontal
-    y = vertical
-
-    In 3D we convert it to:
-
-    X = horizontal
-    Y = height
-    Z = depth
-
-    We temporarily map 2D Y to 3D Z.
-  */
-
   const positionX = (x - 400) / 70;
+
   const positionZ = (y - 250) / 70;
 
   const rotationY =
@@ -82,13 +78,19 @@ function Furniture3D({
     <group
       position={[
         positionX,
-        0.5,
+        0,
         positionZ,
       ]}
       rotation={[0, rotationY, 0]}
       scale={scale}
     >
-      {getFurnitureModel(name)}
+      {model3D ? (
+        <RealFurnitureModel
+          model3D={model3D}
+        />
+      ) : (
+        getFurnitureModel(name)
+      )}
     </group>
   );
 }
@@ -97,7 +99,7 @@ function getFurnitureModel(name: string) {
   switch (name) {
     case "Sofa":
       return (
-        <mesh>
+        <mesh position={[0, 0.5, 0]}>
           <boxGeometry args={[3, 1, 1]} />
 
           <meshStandardMaterial color="#777777" />
@@ -106,7 +108,7 @@ function getFurnitureModel(name: string) {
 
     case "Coffee Table":
       return (
-        <mesh>
+        <mesh position={[0, 0.2, 0]}>
           <boxGeometry args={[2, 0.4, 1]} />
 
           <meshStandardMaterial color="#8b5a2b" />
@@ -115,7 +117,7 @@ function getFurnitureModel(name: string) {
 
     case "Chair":
       return (
-        <mesh>
+        <mesh position={[0, 0.7, 0]}>
           <boxGeometry args={[1, 1.4, 1]} />
 
           <meshStandardMaterial color="#555555" />
@@ -124,7 +126,7 @@ function getFurnitureModel(name: string) {
 
     case "Bed":
       return (
-        <mesh>
+        <mesh position={[0, 0.35, 0]}>
           <boxGeometry args={[3, 0.7, 2]} />
 
           <meshStandardMaterial color="#aaaaaa" />
@@ -133,7 +135,7 @@ function getFurnitureModel(name: string) {
 
     case "Wardrobe":
       return (
-        <mesh>
+        <mesh position={[0, 1.5, 0]}>
           <boxGeometry args={[2, 3, 0.7]} />
 
           <meshStandardMaterial color="#8b6f47" />
@@ -142,7 +144,7 @@ function getFurnitureModel(name: string) {
 
     case "Lamp":
       return (
-        <mesh>
+        <mesh position={[0, 1, 0]}>
           <cylinderGeometry
             args={[0.3, 0.5, 2, 32]}
           />
@@ -153,7 +155,7 @@ function getFurnitureModel(name: string) {
 
     case "Plant":
       return (
-        <mesh>
+        <mesh position={[0, 0.7, 0]}>
           <sphereGeometry
             args={[0.7, 32, 32]}
           />
@@ -162,42 +164,9 @@ function getFurnitureModel(name: string) {
         </mesh>
       );
 
-    case "TV Unit":
-      return (
-        <mesh>
-          <boxGeometry args={[3, 1.5, 0.5]} />
-
-          <meshStandardMaterial color="#333333" />
-        </mesh>
-      );
-
-    case "Nightstand":
-      return (
-        <mesh>
-          <boxGeometry args={[1, 1, 1]} />
-
-          <meshStandardMaterial color="#8b6f47" />
-        </mesh>
-      );
-
-    case "Rug":
-      return (
-        <mesh
-          rotation={[
-            -Math.PI / 2,
-            0,
-            0,
-          ]}
-        >
-          <boxGeometry args={[3, 2, 0.05]} />
-
-          <meshStandardMaterial color="#999999" />
-        </mesh>
-      );
-
     default:
       return (
-        <mesh>
+        <mesh position={[0, 0.5, 0]}>
           <boxGeometry args={[1, 1, 1]} />
 
           <meshStandardMaterial color="#999999" />
@@ -211,7 +180,7 @@ function Scene() {
 
   return (
     <>
-      <ambientLight intensity={0.6} />
+      <ambientLight intensity={0.7} />
 
       <directionalLight
         position={[5, 8, 5]}
@@ -230,6 +199,7 @@ function Scene() {
           y={item.y}
           rotation={item.rotation}
           scale={item.scale}
+          model3D={item.model3D}
         />
       ))}
 

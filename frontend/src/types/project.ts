@@ -3,6 +3,8 @@ export interface FurnitureItem {
 
   name: string;
 
+  category?: string;
+
   x: number;
 
   y: number;
