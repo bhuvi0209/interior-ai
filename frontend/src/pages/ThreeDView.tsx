@@ -13,6 +13,44 @@ import {
 import { useProject } from "../context/ProjectContext";
 
 import type { Project } from "../types/project";
+const ROOM_WIDTH = 12;
+const ROOM_DEPTH = 8;
+const ROOM_HEIGHT = 4;
+const WALL_THICKNESS = 0.2;
+
+// 👇 ADD RoomMaterial HERE
+function RoomMaterial({
+  color = "#eeeeee",
+}: {
+  color?: string;
+}) {
+  return (
+    <meshStandardMaterial
+      color={color}
+      roughness={0.8}
+      metalness={0}
+      side={THREE.DoubleSide}
+    />
+  );
+}
+
+
+// 👇 Floor comes after RoomMaterial
+function Floor() {
+  return (
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, 0, 0]}
+      receiveShadow
+    >
+      <planeGeometry
+        args={[ROOM_WIDTH, ROOM_DEPTH]}
+      />
+
+      <RoomMaterial color="#d8d2c8" />
+    </mesh>
+  );
+}
 
 interface Furniture3DProps {
   id: number;
@@ -49,23 +87,6 @@ interface SceneProps {
 }
 
 /* --------------------------------
-   FLOOR
---------------------------------- */
-
-function Floor() {
-  return (
-    <mesh
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, 0, 0]}
-    >
-      <planeGeometry args={[12, 8]} />
-
-      <meshStandardMaterial color="#dddddd" />
-    </mesh>
-  );
-}
-
-/* --------------------------------
    WALLS
 --------------------------------- */
 
@@ -73,26 +94,110 @@ function Walls() {
   return (
     <>
       {/* Back wall */}
-      <mesh position={[0, 2, -4]}>
+      <mesh
+        position={[
+          0,
+          ROOM_HEIGHT / 2,
+          -ROOM_DEPTH / 2,
+        ]}
+        receiveShadow
+      >
         <boxGeometry
-          args={[12, 4, 0.2]}
+          args={[
+            ROOM_WIDTH,
+            ROOM_HEIGHT,
+            WALL_THICKNESS,
+          ]}
         />
 
-        <meshStandardMaterial color="#eeeeee" />
+        <RoomMaterial color="#f4f1ec" />
       </mesh>
 
       {/* Left wall */}
-      <mesh position={[-6, 2, 0]}>
+      <mesh
+        position={[
+          -ROOM_WIDTH / 2,
+          ROOM_HEIGHT / 2,
+          0,
+        ]}
+        receiveShadow
+      >
         <boxGeometry
-          args={[0.2, 4, 8]}
+          args={[
+            WALL_THICKNESS,
+            ROOM_HEIGHT,
+            ROOM_DEPTH,
+          ]}
         />
 
-        <meshStandardMaterial color="#eeeeee" />
+        <RoomMaterial color="#f4f1ec" />
+      </mesh>
+
+      {/* Right wall */}
+      <mesh
+        position={[
+          ROOM_WIDTH / 2,
+          ROOM_HEIGHT / 2,
+          0,
+        ]}
+        receiveShadow
+      >
+        <boxGeometry
+          args={[
+            WALL_THICKNESS,
+            ROOM_HEIGHT,
+            ROOM_DEPTH,
+          ]}
+        />
+
+        <RoomMaterial color="#f4f1ec" />
       </mesh>
     </>
   );
 }
+function Ceiling() {
+  return (
+    <mesh
+      rotation={[
+        Math.PI / 2,
+        0,
+        0,
+      ]}
+      position={[
+        0,
+        ROOM_HEIGHT,
+        0,
+      ]}
+    >
+      <planeGeometry
+        args={[
+          ROOM_WIDTH,
+          ROOM_DEPTH,
+        ]}
+      />
 
+      <RoomMaterial color="#fafafa" />
+    </mesh>
+  );
+}
+function RoomBoundary() {
+  return (
+    <lineSegments>
+      <edgesGeometry
+        attach="geometry"
+        args={[
+          new THREE.BoxGeometry(
+            ROOM_WIDTH,
+            0.01,
+            ROOM_DEPTH
+          ),
+        ]}
+      />
+
+      <lineBasicMaterial color="#555555" />
+    </lineSegments>
+  );
+}
 /* --------------------------------
    REAL GLB MODEL
 --------------------------------- */
@@ -105,9 +210,11 @@ function RealFurnitureModel({
   const { scene } = useGLTF(model3D);
 
   return (
-    <primitive
-      object={scene.clone()}
-    />
+   <primitive
+  object={scene}
+  castShadow
+  receiveShadow
+/>
   );
 }
 
@@ -132,10 +239,11 @@ function getFurnitureModel(
 
     case "Coffee Table":
       return (
-        <mesh position={[0, 0.2, 0]}>
-          <boxGeometry
-            args={[2, 0.4, 1]}
-          />
+        <mesh
+  position={[0, 0.5, 0]}
+  castShadow
+  receiveShadow
+>
 
           <meshStandardMaterial color="#8b5a2b" />
         </mesh>
@@ -340,15 +448,18 @@ function Scene({
 }: SceneProps) {
   return (
     <>
-      {/* Lighting */}
-
-      <ambientLight
-        intensity={0.7}
-      />
+      <ambientLight intensity={0.5} />
 
       <directionalLight
         position={[5, 8, 5]}
+        intensity={1.5}
+        castShadow
+      />
+
+      <pointLight
+        position={[0, ROOM_HEIGHT - 0.5, 0]}
         intensity={1}
+        distance={10}
       />
 
       {/* Room */}
@@ -357,82 +468,60 @@ function Scene({
 
       <Walls />
 
+      <Ceiling />
+
+      <RoomBoundary />
+
       {/* Furniture */}
 
-      {project.furniture.map(
-        (item) => (
-          <Furniture3D
-            key={item.id}
-            id={item.id}
-            name={item.name}
-            x={item.x}
-            y={item.y}
-            rotation={
-              item.rotation
-            }
-            scale={item.scale}
-            model3D={
-              item.model3D
-            }
-            selected={
-              selectedId === item.id
-            }
-            onSelect={() =>
-              setSelectedId(
-                item.id
-              )
-            }
-            transformMode={
-              transformMode
-            }
-            onChange={(
-              newX,
-              newY
-            ) => {
-              setProject(
-                (currentProject) => ({
-                  ...currentProject,
-
-                  furniture:
-                    currentProject.furniture.map(
-                      (furniture) =>
-                        furniture.id ===
-                        item.id
-                          ? {
-                              ...furniture,
-                              x: newX,
-                              y: newY,
-                            }
-                          : furniture
-                    ),
-                })
-              );
-            }}
-          />
-        )
-      )}
+      {project.furniture.map((item) => (
+        <Furniture3D
+          key={item.id}
+          id={item.id}
+          name={item.name}
+          x={item.x}
+          y={item.y}
+          rotation={item.rotation}
+          scale={item.scale}
+          model3D={item.model3D}
+          selected={selectedId === item.id}
+          onSelect={() => setSelectedId(item.id)}
+          transformMode={transformMode}
+          onChange={(newX, newY) => {
+            setProject((currentProject) => ({
+              ...currentProject,
+              furniture: currentProject.furniture.map(
+                (furniture) =>
+                  furniture.id === item.id
+                    ? {
+                        ...furniture,
+                        x: newX,
+                        y: newY,
+                      }
+                    : furniture
+              ),
+            }));
+          }}
+        />
+      ))}
 
       {/* Grid */}
 
       <Grid
-        args={[12, 8]}
+        args={[ROOM_WIDTH, ROOM_DEPTH]}
         cellSize={1}
-        cellThickness={1}
-        cellColor="#999999"
+        cellThickness={0.5}
+        cellColor="#b8b8b8"
         sectionSize={4}
-        sectionThickness={1.5}
-        sectionColor="#555555"
+        sectionThickness={1}
+        sectionColor="#777777"
         fadeDistance={20}
         fadeStrength={1}
         followCamera={false}
         infiniteGrid={false}
       />
 
-      {/* Environment */}
-
-      <Environment
-        preset="apartment"
-      />
+      <Environment preset="apartment" />
     </>
   );
 }
@@ -600,17 +689,16 @@ function ThreeDView() {
       {/* 3D Canvas */}
 
       <Canvas
+        shadows
         camera={{
-          position: [
-            8,
-            6,
-            10,
-          ],
-          fov: 50,
-        }}
-        onPointerMissed={() => {
-          setSelectedId(null);
-        }}
+          position: [7, 5, 9],
+          fov: 55,
+          near: 0.1,
+          far: 100,
+      }}
+      onPointerMissed={() => {
+        setSelectedId(null);
+      }}
       >
         <Scene
           project={project}
@@ -624,7 +712,14 @@ function ThreeDView() {
           }
         />
 
-        <OrbitControls />
+        <OrbitControls
+          target={[0, 1, 0]}
+          enableDamping
+          dampingFactor={0.08}
+          minDistance={3}
+          maxDistance={20}
+          maxPolarAngle={Math.PI / 2 - 0.05}
+        />
       </Canvas>
     </div>
   );
