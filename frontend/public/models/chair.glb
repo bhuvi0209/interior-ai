@@ -1,0 +1,7 @@
+{
+  id: "chair",
+  name: "Chair",
+  category: "Living Room",
+  emoji: "🪑",
+  model3D: "/models/chair.glb",
+}

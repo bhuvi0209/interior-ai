@@ -11,7 +11,7 @@ import StyleSelection from "./pages/StyleSelection";
 import FurnitureLibrary from "./pages/FurnitureLibrary";
 import RoomEditor from "./pages/RoomEditor";
 import ProjectSummary from "./pages/ProjectSummary";
-
+import Editor from "./pages/Editor";
 import Navbar from "./components/Navbar";
 
 function App() {
@@ -24,7 +24,7 @@ function App() {
           <Route path="/" element={<Home />} />
 
           <Route path="/upload" element={<UploadRoom />} />
-
+          <Route path="/editor" element={<Editor />} />
           <Route
             path="/style"
             element={<StyleSelection />}
