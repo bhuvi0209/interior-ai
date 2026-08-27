@@ -228,13 +228,14 @@ function getFurnitureModel(
   switch (name) {
     case "Sofa":
       return (
-        <mesh position={[0, 0.5, 0]}>
-          <boxGeometry
-            args={[3, 1, 1]}
-          />
-
-          <meshStandardMaterial color="#777777" />
-        </mesh>
+        <mesh
+  position={[0, 0.5, 0]}
+  castShadow
+  receiveShadow
+>
+  <boxGeometry args={[2, 0.3, 1]} />
+  <meshStandardMaterial color="#8b5a2b" />
+</mesh>
       );
 
     case "Coffee Table":
@@ -355,13 +356,7 @@ function Furniture3D({
     or fallback box model.
   */
 
-  const furnitureModel = model3D ? (
-    <RealFurnitureModel
-      model3D={model3D}
-    />
-  ) : (
-    getFurnitureModel(name)
-  );
+  const furnitureModel = getFurnitureModel(name);
 
   return (
     <group
@@ -689,7 +684,6 @@ function ThreeDView() {
       {/* 3D Canvas */}
 
       <Canvas
-        shadows
         camera={{
           position: [7, 5, 9],
           fov: 55,
@@ -716,10 +710,10 @@ function ThreeDView() {
           target={[0, 1, 0]}
           enableDamping
           dampingFactor={0.08}
-          minDistance={3}
-          maxDistance={20}
-          maxPolarAngle={Math.PI / 2 - 0.05}
-        />
+  minDistance={3}
+  maxDistance={20}
+  maxPolarAngle={Math.PI / 2 - 0.05}
+/>
       </Canvas>
     </div>
   );

@@ -21,7 +21,6 @@ function Editor() {
 
   const [draggingId, setDraggingId] =
     useState<number | null>(null);
-
   const stageRef = useRef<HTMLDivElement | null>(
     null
   );
@@ -412,19 +411,88 @@ function Editor() {
             }}
           >
             <div
-              ref={stageRef}
-              onPointerMove={
-                handlePointerMove
-              }
-              onPointerUp={
-                handlePointerUp
-              }
-              onPointerLeave={
-                handlePointerUp
-              }
-              onClick={() =>
-                setSelectedId(null)
-              }
+  ref={stageRef}
+
+  onPointerMove={
+    handlePointerMove
+  }
+
+  onPointerUp={
+    handlePointerUp
+  }
+
+  onPointerLeave={
+    handlePointerUp
+  }
+
+  onClick={() =>
+    setSelectedId(null)
+  }
+
+  onDragOver={(event) => {
+    event.preventDefault();
+
+    event.dataTransfer.dropEffect =
+      "copy";
+  }}
+
+  onDrop={(event) => {
+  event.preventDefault();
+
+  const furnitureId =
+    event.dataTransfer.getData(
+      "furnitureId"
+    );
+
+ const furniture =
+  furnitureLibrary.find(
+    (item) => item.id === furnitureId
+  );
+
+  if (!furniture) {
+    return;
+  }
+  const rect =
+  event.currentTarget.getBoundingClientRect();
+
+const x =
+  (event.clientX - rect.left)/zoom;
+
+const y =
+  (event.clientY - rect.top)/zoom;
+setProject((currentProject) => ({
+  ...currentProject,
+
+  furniture: [
+    ...currentProject.furniture,
+
+    {
+      id: Date.now(),
+
+      name: furniture.name,
+
+      category: furniture.category,
+
+      x,
+
+      y,
+
+      rotation: 0,
+
+      scale:
+        furniture.defaultScale ?? 1,
+
+      model3D:
+        furniture.model3D,
+    },
+  ],
+}));
+
+  console.log(
+    "Furniture:",
+    furniture
+  );
+}}
               style={{
                 width: "760px",
                 height: "500px",

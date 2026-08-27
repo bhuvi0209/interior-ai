@@ -9,6 +9,7 @@ export default function FurnitureLibrary({
   onAddFurniture,
 }: FurnitureLibraryProps) {
   const [search, setSearch] = useState("");
+
   const categories = [
     "Living Room",
     "Bedroom",
@@ -34,7 +35,8 @@ export default function FurnitureLibrary({
       >
         Furniture Library
       </h2>
-            <input
+
+      <input
         type="text"
         placeholder="Search furniture..."
         value={search}
@@ -66,27 +68,35 @@ export default function FurnitureLibrary({
               .filter(
                 (item) =>
                   item.category === category
-        )
-        .filter((item) =>
-            item.name
-              .toLowerCase()
-              .includes(search.toLowerCase())
-        )
-        .map((item) => (
+              )
+              .filter((item) =>
+                item.name
+                  .toLowerCase()
+                  .includes(search.toLowerCase())
+              )
+              .map((item) => (
                 <button
                   key={item.id}
+                  draggable
                   onClick={() =>
                     onAddFurniture(item.id)
                   }
-                  style={{
-                    padding: "10px",
-                    border:
-                      "1px solid #ddd",
-                    borderRadius: "8px",
-                    background: "#ffffff",
-                    cursor: "pointer",
-                    fontSize: "14px",
+                  onDragStart={(event) => {
+                    event.dataTransfer.setData(
+                      "furnitureId",
+                      item.id
+                    );
+
+                    event.dataTransfer.effectAllowed =
+                      "copy";
                   }}
+                  style={{
+                      padding: "15px",
+                      border: "1px solid #ddd",
+                      borderRadius: "10px",
+                      background: "white",
+                      cursor: "grab",
+                    }}
                 >
                   <div
                     style={{
@@ -94,9 +104,7 @@ export default function FurnitureLibrary({
                       marginBottom: "5px",
                     }}
                   >
-                    {getFurnitureEmoji(
-                      item.name
-                    )}
+                    {getFurnitureEmoji(item.name)}
                   </div>
 
                   <div>{item.name}</div>
@@ -113,11 +121,8 @@ export default function FurnitureLibrary({
 // FURNITURE EMOJI
 // ---------------------------------------------
 
-function getFurnitureEmoji(
-  name: string
-) {
-  const lowerName =
-    name.toLowerCase();
+function getFurnitureEmoji(name: string) {
+  const lowerName = name.toLowerCase();
 
   if (lowerName.includes("sofa")) {
     return "🛋️";
