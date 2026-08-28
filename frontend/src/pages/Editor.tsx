@@ -30,48 +30,48 @@ function Editor() {
   // --------------------------------------------------
 
   const handleAddFurniture = (
-    furnitureId: string
-  ) => {
-    const definition =
-      furnitureLibrary.find(
-        (item) => item.id === furnitureId
-      );
+  furnitureId: string
+) => {
+  const definition =
+    furnitureLibrary.find(
+      (item) => item.id === furnitureId
+    );
 
-    if (!definition) {
-      return;
-    }
+  if (!definition) {
+    return;
+  }
 
-    const newFurniture = {
-      id: Date.now(),
+  const newFurniture = {
+    id: Date.now(),
 
-      name: definition.name,
+    name: definition.name,
 
-      category: definition.category,
+    category: definition.category,
 
-      x: 400,
+    x: 400,
 
-      y: 250,
+    y: 250,
 
-      rotation: 0,
+    rotation: 0,
 
-      scale: 1,
+    scale: definition.defaultScale ?? 1,
 
-      image2D: definition.image2D,
+    image2D: definition.image2D,
 
-      model3D: definition.model3D,
-    };
-
-    setProject((currentProject) => ({
-      ...currentProject,
-
-      furniture: [
-        ...currentProject.furniture,
-        newFurniture,
-      ],
-    }));
-
-    setSelectedId(newFurniture.id);
+    model3D: definition.model3D,
   };
+
+  setProject((currentProject) => ({
+    ...currentProject,
+
+    furniture: [
+      ...currentProject.furniture,
+      newFurniture,
+    ],
+  }));
+
+  setSelectedId(newFurniture.id);
+};
 
   // --------------------------------------------------
   // SELECT FURNITURE

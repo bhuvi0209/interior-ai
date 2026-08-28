@@ -65,7 +65,11 @@ interface Furniture3DProps {
 
   onSelect: () => void;
 
-  onChange: (x: number, y: number) => void;
+  onChange: (
+  x: number,
+  y: number,
+  rotation: number
+) => void;
 
   transformMode: "translate" | "rotate";
 }
@@ -245,7 +249,7 @@ function getFurnitureModel(
   castShadow
   receiveShadow
 >
-
+          <boxGeometry args={[2, 0.2, 1]} />
           <meshStandardMaterial color="#8b5a2b" />
         </mesh>
       );
@@ -356,7 +360,10 @@ function Furniture3D({
     or fallback box model.
   */
 
-  const furnitureModel = getFurnitureModel(name);
+  const furnitureModel =
+  model3D
+    ? <RealFurnitureModel model3D={model3D} />
+    : getFurnitureModel(name);
 
   return (
     <group
@@ -385,41 +392,34 @@ function Furniture3D({
           showY={false}
           showZ
           onObjectChange={() => {
-            if (!groupRef.current) {
-              return;
-            }
+  if (!groupRef.current) {
+    return;
+  }
 
-            /*
-              Get current 3D position.
-            */
+  const currentX =
+    groupRef.current.position.x;
 
-            const currentX =
-              groupRef.current.position.x;
+  const currentZ =
+    groupRef.current.position.z;
 
-            const currentZ =
-              groupRef.current.position.z;
+  const currentRotation =
+    groupRef.current.rotation.y;
 
-            /*
-              Convert 3D coordinates
-              back into 2D coordinates.
-            */
+  const newX =
+    currentX * 70 + 400;
 
-            const newX =
-              currentX * 70 + 400;
+  const newY =
+    currentZ * 70 + 250;
 
-            const newY =
-              currentZ * 70 + 250;
+  const newRotation =
+    (currentRotation * 180) / Math.PI;
 
-            /*
-              Send updated position
-              back to ProjectContext.
-            */
-
-            onChange(
-              newX,
-              newY
-            );
-          }}
+  onChange(
+    newX,
+    newY,
+    newRotation
+  );
+}}
         >
           {furnitureModel}
         </TransformControls>
@@ -482,7 +482,7 @@ function Scene({
           selected={selectedId === item.id}
           onSelect={() => setSelectedId(item.id)}
           transformMode={transformMode}
-          onChange={(newX, newY) => {
+          onChange={(newX, newY, newRotation) => {
             setProject((currentProject) => ({
               ...currentProject,
               furniture: currentProject.furniture.map(
@@ -492,6 +492,7 @@ function Scene({
                         ...furniture,
                         x: newX,
                         y: newY,
+                        rotation: newRotation,
                       }
                     : furniture
               ),

@@ -91,12 +91,12 @@ export default function FurnitureLibrary({
                       "copy";
                   }}
                   style={{
-                      padding: "15px",
-                      border: "1px solid #ddd",
-                      borderRadius: "10px",
-                      background: "white",
-                      cursor: "grab",
-                    }}
+                    padding: "15px",
+                    border: "1px solid #ddd",
+                    borderRadius: "10px",
+                    background: "white",
+                    cursor: "grab",
+                  }}
                 >
                   <div
                     style={{
