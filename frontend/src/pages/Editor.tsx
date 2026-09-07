@@ -3,84 +3,73 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-
 import { useProject } from "../context/ProjectContext";
 import FurnitureLibrary from "../components/FurnitureLibrary";
 import { furnitureLibrary } from "../data/furnitureData";
+
+function getFurnitureEmoji(name: string) {
+  const lowerName = name.toLowerCase();
+
+  if (lowerName.includes("sofa")) return "🛋️";
+  if (lowerName.includes("chair")) return "🪑";
+  if (lowerName.includes("table")) return "🪵";
+  if (lowerName.includes("bed")) return "🛏️";
+  if (lowerName.includes("lamp")) return "💡";
+  if (lowerName.includes("plant")) return "🌱";
+  if (lowerName.includes("wardrobe")) return "🚪";
+
+  return "🪑";
+}
 
 function Editor() {
   const { project, setProject } = useProject();
 
   const [selectedId, setSelectedId] =
-    useState<number | null>(null);
+    useState<string | number | null>(null);
 
   const [zoom, setZoom] = useState(1);
 
-  const [showGrid, setShowGrid] =
-    useState(true);
+  const [showGrid, setShowGrid] = useState(true);
 
   const [draggingId, setDraggingId] =
     useState<number | null>(null);
-  const stageRef = useRef<HTMLDivElement | null>(
-    null
-  );
+
+  const stageRef = useRef<HTMLDivElement | null>(null);
 
   // --------------------------------------------------
   // ADD FURNITURE
   // --------------------------------------------------
 
-  const handleAddFurniture = (
-  furnitureId: string
-) => {
-  const definition =
-    furnitureLibrary.find(
+  const handleAddFurniture = (furnitureId: string) => {
+    const definition = furnitureLibrary.find(
       (item) => item.id === furnitureId
     );
 
-  if (!definition) {
-    return;
-  }
+    if (!definition) {
+      return;
+    }
 
-  const newFurniture = {
-    id: Date.now(),
+    const newFurniture = {
+      id: Date.now(),
+      name: definition.name,
+      category: definition.category,
+      x: 400,
+      y: 250,
+      rotation: 0,
+      scale: definition.defaultScale ?? 1,
+      image2D: definition.image2D,
+      model3D: definition.model3D,
+    };
 
-    name: definition.name,
+    setProject((currentProject) => ({
+      ...currentProject,
+      furniture: [
+        ...currentProject.furniture,
+        newFurniture,
+      ],
+    }));
 
-    category: definition.category,
-
-    x: 400,
-
-    y: 250,
-
-    rotation: 0,
-
-    scale: definition.defaultScale ?? 1,
-
-    image2D: definition.image2D,
-
-    model3D: definition.model3D,
-  };
-
-  setProject((currentProject) => ({
-    ...currentProject,
-
-    furniture: [
-      ...currentProject.furniture,
-      newFurniture,
-    ],
-  }));
-
-  setSelectedId(newFurniture.id);
-};
-
-  // --------------------------------------------------
-  // SELECT FURNITURE
-  // --------------------------------------------------
-
-  const handleSelectFurniture = (
-    id: number
-  ) => {
-    setSelectedId(id);
+    setSelectedId(newFurniture.id);
   };
 
   // --------------------------------------------------
@@ -122,7 +111,6 @@ function Editor() {
 
     setProject((currentProject) => ({
       ...currentProject,
-
       furniture:
         currentProject.furniture.map(
           (item) =>
@@ -131,17 +119,11 @@ function Editor() {
                   ...item,
                   x: Math.max(
                     20,
-                    Math.min(
-                      740,
-                      newX
-                    )
+                    Math.min(740, newX)
                   ),
                   y: Math.max(
                     20,
-                    Math.min(
-                      480,
-                      newY
-                    )
+                    Math.min(480, newY)
                   ),
                 }
               : item
@@ -164,19 +146,16 @@ function Editor() {
   };
 
   // --------------------------------------------------
-  // UPDATE ROTATION
+  // ROTATION
   // --------------------------------------------------
 
-  const updateRotation = (
-    value: number
-  ) => {
+  const updateRotation = (value: number) => {
     if (selectedId === null) {
       return;
     }
 
     setProject((currentProject) => ({
       ...currentProject,
-
       furniture:
         currentProject.furniture.map(
           (item) =>
@@ -191,19 +170,16 @@ function Editor() {
   };
 
   // --------------------------------------------------
-  // UPDATE SCALE
+  // SCALE
   // --------------------------------------------------
 
-  const updateScale = (
-    value: number
-  ) => {
+  const updateScale = (value: number) => {
     if (selectedId === null) {
       return;
     }
 
     setProject((currentProject) => ({
       ...currentProject,
-
       furniture:
         currentProject.furniture.map(
           (item) =>
@@ -218,7 +194,7 @@ function Editor() {
   };
 
   // --------------------------------------------------
-  // DELETE FURNITURE
+  // DELETE
   // --------------------------------------------------
 
   const deleteSelectedFurniture = () => {
@@ -228,7 +204,6 @@ function Editor() {
 
     setProject((currentProject) => ({
       ...currentProject,
-
       furniture:
         currentProject.furniture.filter(
           (item) =>
@@ -240,7 +215,7 @@ function Editor() {
   };
 
   // --------------------------------------------------
-  // RESET ZOOM
+  // ZOOM
   // --------------------------------------------------
 
   const resetZoom = () => {
@@ -266,13 +241,10 @@ function Editor() {
       style={{
         minHeight: "100vh",
         background: "#ffffff",
-        fontFamily:
-          "Arial, sans-serif",
+        fontFamily: "Arial, sans-serif",
       }}
     >
-      {/* --------------------------------------------- */}
       {/* HEADER */}
-      {/* --------------------------------------------- */}
 
       <header
         style={{
@@ -298,14 +270,12 @@ function Editor() {
             marginTop: "8px",
           }}
         >
-          Arrange your furniture and
-          create your room layout.
+          Arrange your furniture and create
+          your room layout.
         </p>
       </header>
 
-      {/* --------------------------------------------- */}
       {/* MAIN LAYOUT */}
-      {/* --------------------------------------------- */}
 
       <div
         style={{
@@ -315,9 +285,7 @@ function Editor() {
           alignItems: "flex-start",
         }}
       >
-        {/* ------------------------------------------- */}
         {/* FURNITURE LIBRARY */}
-        {/* ------------------------------------------- */}
 
         <FurnitureLibrary
           onAddFurniture={
@@ -325,9 +293,7 @@ function Editor() {
           }
         />
 
-        {/* ------------------------------------------- */}
         {/* CENTER EDITOR */}
-        {/* ------------------------------------------- */}
 
         <div
           style={{
@@ -335,9 +301,7 @@ function Editor() {
             minWidth: 0,
           }}
         >
-          {/* ----------------------------------------- */}
           {/* TOOLBAR */}
-          {/* ----------------------------------------- */}
 
           <div
             style={{
@@ -373,17 +337,13 @@ function Editor() {
               🔍-
             </button>
 
-            <button
-              onClick={resetZoom}
-            >
+            <button onClick={resetZoom}>
               Reset Zoom
             </button>
 
             <button
               onClick={() =>
-                setShowGrid(
-                  !showGrid
-                )
+                setShowGrid(!showGrid)
               }
             >
               {showGrid
@@ -400,9 +360,7 @@ function Editor() {
             </button>
           </div>
 
-          {/* ----------------------------------------- */}
           {/* ROOM */}
-          {/* ----------------------------------------- */}
 
           <div
             style={{
@@ -411,128 +369,117 @@ function Editor() {
             }}
           >
             <div
-  ref={stageRef}
+              ref={stageRef}
+              onPointerMove={
+                handlePointerMove
+              }
+              onPointerUp={
+                handlePointerUp
+              }
+              onPointerLeave={
+                handlePointerUp
+              }
+              onClick={() =>
+                setSelectedId(null)
+              }
+              onDragOver={(event) => {
+                event.preventDefault();
 
-  onPointerMove={
-    handlePointerMove
-  }
+                event.dataTransfer.dropEffect =
+                  "copy";
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
 
-  onPointerUp={
-    handlePointerUp
-  }
+                const furnitureId =
+                  event.dataTransfer.getData(
+                    "furnitureId"
+                  );
 
-  onPointerLeave={
-    handlePointerUp
-  }
+                const furniture =
+                  furnitureLibrary.find(
+                    (item) =>
+                      item.id === furnitureId
+                  );
 
-  onClick={() =>
-    setSelectedId(null)
-  }
+                if (!furniture) {
+                  return;
+                }
 
-  onDragOver={(event) => {
-    event.preventDefault();
+                const rect =
+                  event.currentTarget.getBoundingClientRect();
 
-    event.dataTransfer.dropEffect =
-      "copy";
-  }}
+                const x =
+                  (event.clientX -
+                    rect.left) /
+                  zoom;
 
-  onDrop={(event) => {
-  event.preventDefault();
+                const y =
+                  (event.clientY -
+                    rect.top) /
+                  zoom;
 
-  const furnitureId =
-    event.dataTransfer.getData(
-      "furnitureId"
-    );
+                const newFurniture = {
+                  id: Date.now(),
+                  name: furniture.name,
+                  category:
+                    furniture.category,
+                  x,
+                  y,
+                  rotation: 0,
+                  scale:
+                    furniture.defaultScale ??
+                    1,
+                  image2D:
+                    furniture.image2D,
+                  model3D:
+                    furniture.model3D,
+                };
 
- const furniture =
-  furnitureLibrary.find(
-    (item) => item.id === furnitureId
-  );
+                setProject(
+                  (currentProject) => ({
+                    ...currentProject,
+                    furniture: [
+                      ...currentProject.furniture,
+                      newFurniture,
+                    ],
+                  })
+                );
 
-  if (!furniture) {
-    return;
-  }
-  const rect =
-  event.currentTarget.getBoundingClientRect();
-
-const x =
-  (event.clientX - rect.left)/zoom;
-
-const y =
-  (event.clientY - rect.top)/zoom;
-setProject((currentProject) => ({
-  ...currentProject,
-
-  furniture: [
-    ...currentProject.furniture,
-
-    {
-      id: Date.now(),
-
-      name: furniture.name,
-
-      category: furniture.category,
-
-      x,
-
-      y,
-
-      rotation: 0,
-
-      scale:
-        furniture.defaultScale ?? 1,
-
-      model3D:
-        furniture.model3D,
-    },
-  ],
-}));
-
-  console.log(
-    "Furniture:",
-    furniture
-  );
-}}
+                setSelectedId(
+                  newFurniture.id
+                );
+              }}
               style={{
                 width: "760px",
                 height: "500px",
                 position: "relative",
                 overflow: "hidden",
-                border:
-                  "2px solid #333",
-                backgroundColor:
-                  "#eee",
+                border: "2px solid #333",
+                backgroundColor: "#eee",
                 backgroundImage:
                   project.roomImage
                     ? `url(${project.roomImage})`
                     : undefined,
-                backgroundSize:
-                  "cover",
-                backgroundPosition:
-                  "center",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
                 transform: `scale(${zoom})`,
-                transformOrigin:
-                  "top left",
+                transformOrigin: "top left",
                 cursor:
                   draggingId !== null
                     ? "grabbing"
                     : "default",
               }}
             >
-              {/* ------------------------------------- */}
               {/* GRID */}
-              {/* ------------------------------------- */}
 
               {showGrid && (
                 <div
                   style={{
-                    position:
-                      "absolute",
+                    position: "absolute",
                     inset: 0,
-                    pointerEvents:
-                      "none",
-                    backgroundImage:
-                      `
+                    pointerEvents: "none",
+                    backgroundImage: `
                       linear-gradient(
                         rgba(0,0,0,0.12) 1px,
                         transparent 1px
@@ -549,143 +496,151 @@ setProject((currentProject) => ({
                 />
               )}
 
-              {/* ------------------------------------- */}
               {/* NO ROOM IMAGE */}
-              {/* ------------------------------------- */}
 
               {!project.roomImage && (
                 <div
                   style={{
-                    position:
-                      "absolute",
+                    position: "absolute",
                     inset: 0,
                     display: "flex",
-                    alignItems:
-                      "center",
-                    justifyContent:
-                      "center",
+                    alignItems: "center",
+                    justifyContent: "center",
                     color: "#777",
                     fontSize: "20px",
-                    pointerEvents:
-                      "none",
+                    pointerEvents: "none",
                   }}
                 >
-                  No room image
-                  uploaded
+                  No room image uploaded
                 </div>
               )}
 
-              {/* ------------------------------------- */}
               {/* FURNITURE */}
-              {/* ------------------------------------- */}
 
               {project.furniture.map(
-                (item) => {
-                  const isSelected =
-                    item.id ===
-                    selectedId;
+                (item) => (
+                  <div
+                    key={item.id}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setSelectedId(item.id);
+                    }}
+                    onPointerDown={(event) =>
+                      handlePointerDown(
+                        event,
+                        item.id
+                      )
+                    }
+                    style={{
+                      position: "absolute",
+                      left: item.x,
+                      top: item.y,
+                      transform: `
+                        rotate(${item.rotation ?? 0}deg)
+                        scale(${item.scale ?? 1})
+                      `,
+                      cursor:
+                        draggingId === item.id
+                          ? "grabbing"
+                          : "grab",
+                      padding: "10px",
+                      border:
+                        selectedId === item.id
+                          ? "2px solid blue"
+                          : "1px solid transparent",
+                      borderRadius: "8px",
+                      background:
+                        selectedId === item.id
+                          ? "#eef4ff"
+                          : "transparent",
+                      userSelect: "none",
+                    }}
+                  >
+                    {getFurnitureEmoji(
+                      item.name
+                    )}{" "}
+                    {item.name}
+                  </div>
+                )
+              )}
+            </div>
+          </div>
 
-                  const scale =
-                    item.scale ?? 1;
+          {/* PROJECT FURNITURE LIST */}
 
-                  const rotation =
-                    item.rotation ?? 0;
+          <div
+            style={{
+              marginTop: "30px",
+              padding: "20px",
+              background: "#f5f5f5",
+              borderRadius: "12px",
+            }}
+          >
+            <h2
+              style={{
+                textAlign: "center",
+              }}
+            >
+              Furniture in Project
+            </h2>
 
-                  return (
-                    <div
-                      key={item.id}
-                      onPointerDown={(
-                        event
-                      ) =>
-                        handlePointerDown(
-                          event,
-                          item.id
-                        )
-                      }
-                      onClick={(
-                        event
-                      ) => {
-                        event.stopPropagation();
+            {project.furniture.length ===
+              0 && (
+              <p
+                style={{
+                  textAlign: "center",
+                  color: "#777",
+                }}
+              >
+                No furniture added yet.
+              </p>
+            )}
 
-                        handleSelectFurniture(
-                          item.id
-                        );
-                      }}
-                      style={{
-                        position:
-                          "absolute",
-
-                        left: item.x,
-
-                        top: item.y,
-
-                        transform: `
-                          translate(-50%, -50%)
-                          rotate(${rotation}deg)
-                          scale(${scale})
-                        `,
-
-                        transformOrigin:
-                          "center",
-
-                        width: "70px",
-
-                        height: "70px",
-
-                        display: "flex",
-
-                        alignItems:
-                          "center",
-
-                        justifyContent:
-                          "center",
-
-                        fontSize: "48px",
-
-                        cursor:
-                          draggingId ===
-                          item.id
-                            ? "grabbing"
-                            : "grab",
-
-                        border: isSelected
-                          ? "3px solid #2563eb"
-                          : "3px solid transparent",
-
-                        borderRadius:
-                          "10px",
-
-                        background:
-                          isSelected
-                            ? "rgba(255,255,255,0.6)"
-                            : "transparent",
-
-                        userSelect:
-                          "none",
-
-                        touchAction:
-                          "none",
-
-                        zIndex:
-                          isSelected
-                            ? 10
-                            : 2,
-                      }}
-                    >
-                      {getFurnitureEmoji(
-                        item.name
-                      )}
-                    </div>
-                  );
-                }
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              {project.furniture.map(
+                (item) => (
+                  <div
+                    key={item.id}
+                    onClick={() =>
+                      setSelectedId(
+                        item.id
+                      )
+                    }
+                    style={{
+                      border:
+                        selectedId ===
+                        item.id
+                          ? "2px solid blue"
+                          : "1px solid transparent",
+                      cursor: "pointer",
+                      padding: "10px",
+                      borderRadius: "8px",
+                      background:
+                        selectedId ===
+                        item.id
+                          ? "#eef4ff"
+                          : "transparent",
+                    }}
+                  >
+                    {getFurnitureEmoji(
+                      item.name
+                    )}{" "}
+                    {item.name}
+                  </div>
+                )
               )}
             </div>
           </div>
         </div>
 
-        {/* ------------------------------------------- */}
         {/* PROPERTIES */}
-        {/* ------------------------------------------- */}
 
         <div
           style={{
@@ -695,12 +650,10 @@ setProject((currentProject) => ({
         >
           <div
             style={{
-              border:
-                "1px solid #ddd",
+              border: "1px solid #ddd",
               borderRadius: "12px",
               padding: "20px",
-              background:
-                "#ffffff",
+              background: "#ffffff",
             }}
           >
             <h2
@@ -715,13 +668,11 @@ setProject((currentProject) => ({
             {!selectedFurniture && (
               <p
                 style={{
-                  textAlign:
-                    "center",
+                  textAlign: "center",
                   color: "#777",
                 }}
               >
-                Select furniture to
-                edit it.
+                Select furniture to edit it.
               </p>
             )}
 
@@ -755,11 +706,8 @@ setProject((currentProject) => ({
                       );
 
                     setProject(
-                      (
-                        currentProject
-                      ) => ({
+                      (currentProject) => ({
                         ...currentProject,
-
                         furniture:
                           currentProject.furniture.map(
                             (item) =>
@@ -777,8 +725,7 @@ setProject((currentProject) => ({
                   style={{
                     width: "100%",
                     marginTop: "5px",
-                    marginBottom:
-                      "12px",
+                    marginBottom: "12px",
                     padding: "8px",
                     boxSizing:
                       "border-box",
@@ -801,11 +748,8 @@ setProject((currentProject) => ({
                       );
 
                     setProject(
-                      (
-                        currentProject
-                      ) => ({
+                      (currentProject) => ({
                         ...currentProject,
-
                         furniture:
                           currentProject.furniture.map(
                             (item) =>
@@ -823,8 +767,7 @@ setProject((currentProject) => ({
                   style={{
                     width: "100%",
                     marginTop: "5px",
-                    marginBottom:
-                      "12px",
+                    marginBottom: "12px",
                     padding: "8px",
                     boxSizing:
                       "border-box",
@@ -846,8 +789,7 @@ setProject((currentProject) => ({
                   onChange={(event) =>
                     updateRotation(
                       Number(
-                        event.target
-                          .value
+                        event.target.value
                       )
                     )
                   }
@@ -858,10 +800,8 @@ setProject((currentProject) => ({
 
                 <div
                   style={{
-                    textAlign:
-                      "center",
-                    marginBottom:
-                      "15px",
+                    textAlign: "center",
+                    marginBottom: "15px",
                   }}
                 >
                   {selectedFurniture.rotation ??
@@ -885,8 +825,7 @@ setProject((currentProject) => ({
                   onChange={(event) =>
                     updateScale(
                       Number(
-                        event.target
-                          .value
+                        event.target.value
                       )
                     )
                   }
@@ -897,10 +836,8 @@ setProject((currentProject) => ({
 
                 <div
                   style={{
-                    textAlign:
-                      "center",
-                    marginBottom:
-                      "15px",
+                    textAlign: "center",
+                    marginBottom: "15px",
                   }}
                 >
                   {(
@@ -917,13 +854,10 @@ setProject((currentProject) => ({
                     width: "100%",
                     padding: "10px",
                     border: "none",
-                    borderRadius:
-                      "6px",
-                    background:
-                      "#dc2626",
+                    borderRadius: "6px",
+                    background: "#dc2626",
                     color: "white",
-                    cursor:
-                      "pointer",
+                    cursor: "pointer",
                   }}
                 >
                   Delete Furniture
@@ -933,143 +867,8 @@ setProject((currentProject) => ({
           </div>
         </div>
       </div>
-
-      {/* --------------------------------------------- */}
-      {/* PROJECT FURNITURE LIST */}
-      {/* --------------------------------------------- */}
-
-      <div
-        style={{
-          margin: "0 30px 30px",
-          padding: "20px",
-          background: "#f5f5f5",
-          borderRadius: "12px",
-        }}
-      >
-        <h2
-          style={{
-            textAlign: "center",
-          }}
-        >
-          Furniture in Project
-        </h2>
-
-        {project.furniture.length ===
-          0 && (
-          <p
-            style={{
-              textAlign:
-                "center",
-              color: "#777",
-            }}
-          >
-            No furniture added
-            yet.
-          </p>
-        )}
-
-        <div
-          style={{
-            display: "flex",
-            flexDirection:
-              "column",
-            alignItems:
-              "center",
-            gap: "6px",
-          }}
-        >
-          {project.furniture.map(
-            (item) => (
-              <div
-                key={item.id}
-                onClick={() =>
-                  setSelectedId(
-                    item.id
-                  )
-                }
-                style={{
-                  cursor:
-                    "pointer",
-                }}
-              >
-                {getFurnitureEmoji(
-                  item.name
-                )}{" "}
-                {item.name}
-              </div>
-            )
-          )}
-        </div>
-      </div>
     </div>
   );
-}
-
-// --------------------------------------------------
-// FURNITURE EMOJI
-// --------------------------------------------------
-
-function getFurnitureEmoji(
-  name: string
-) {
-  const lowerName =
-    name.toLowerCase();
-
-  if (lowerName.includes("sofa")) {
-    return "🛋️";
-  }
-
-  if (lowerName.includes("chair")) {
-    return "🪑";
-  }
-
-  if (
-    lowerName.includes(
-      "table"
-    )
-  ) {
-    return "☕";
-  }
-
-  if (lowerName.includes("bed")) {
-    return "🛏️";
-  }
-
-  if (
-    lowerName.includes(
-      "wardrobe"
-    )
-  ) {
-    return "🚪";
-  }
-
-  if (
-    lowerName.includes("lamp")
-  ) {
-    return "💡";
-  }
-
-  if (
-    lowerName.includes("plant")
-  ) {
-    return "🪴";
-  }
-
-  if (
-    lowerName.includes("rug")
-  ) {
-    return "🟫";
-  }
-
-  if (
-    lowerName.includes(
-      "tv"
-    )
-  ) {
-    return "📺";
-  }
-
-  return "🪑";
 }
 
 export default Editor;
