@@ -1,4 +1,8 @@
 import { useProject } from "../context/ProjectContext";
+import {
+  MIN_SCALE,
+  MAX_SCALE,
+} from "../constants/editor";
 
 type Props = {
   selectedId: string | number | null;
@@ -24,6 +28,10 @@ export default function FurnitureProperties({
     return null;
   }
 
+  // --------------------------------
+  // Update furniture
+  // --------------------------------
+
   const updateFurniture = (
     changes: Partial<typeof furniture>
   ) => {
@@ -43,6 +51,56 @@ export default function FurnitureProperties({
     }));
   };
 
+  // --------------------------------
+  // Change scale
+  // --------------------------------
+
+  const changeScale = (
+    amount: number
+  ) => {
+    const currentScale =
+      furniture.scale ?? 1;
+
+    const newScale =
+      currentScale + amount;
+
+    const limitedScale =
+      Math.max(
+        MIN_SCALE,
+        Math.min(
+          MAX_SCALE,
+          newScale
+        )
+      );
+
+    updateFurniture({
+      scale: limitedScale,
+    });
+  };
+
+  // --------------------------------
+  // Rotate furniture
+  // --------------------------------
+
+  const rotateFurniture = (
+    amount: number
+  ) => {
+    const currentRotation =
+      furniture.rotation ?? 0;
+
+    const newRotation =
+      (currentRotation + amount + 360) %
+      360;
+
+    updateFurniture({
+      rotation: newRotation,
+    });
+  };
+
+  // --------------------------------
+  // Delete furniture
+  // --------------------------------
+
   const deleteFurniture = () => {
     setProject((currentProject) => ({
       ...currentProject,
@@ -57,6 +115,20 @@ export default function FurnitureProperties({
     onClose();
   };
 
+  // --------------------------------
+  // Current values
+  // --------------------------------
+
+  const currentScale =
+    furniture.scale ?? 1;
+
+  const currentRotation =
+    furniture.rotation ?? 0;
+
+  // --------------------------------
+  // UI
+  // --------------------------------
+
   return (
     <div
       style={{
@@ -69,7 +141,11 @@ export default function FurnitureProperties({
     >
       <h2>{furniture.name}</h2>
 
-      <label>X Position</label>
+      {/* X POSITION */}
+
+      <label>
+        X Position
+      </label>
 
       <input
         type="number"
@@ -81,9 +157,17 @@ export default function FurnitureProperties({
             ),
           })
         }
+        style={{
+          width: "100%",
+          marginBottom: "12px",
+        }}
       />
 
-      <label>Y Position</label>
+      {/* Y POSITION */}
+
+      <label>
+        Y Position
+      </label>
 
       <input
         type="number"
@@ -95,13 +179,23 @@ export default function FurnitureProperties({
             ),
           })
         }
+        style={{
+          width: "100%",
+          marginBottom: "12px",
+        }}
       />
 
-      <label>Rotation</label>
+      {/* ROTATION */}
+
+      <label>
+        Rotation: {currentRotation}°
+      </label>
 
       <input
         type="number"
-        value={furniture.rotation}
+        min="0"
+        max="360"
+        value={currentRotation}
         onChange={(event) =>
           updateFurniture({
             rotation: Number(
@@ -109,15 +203,61 @@ export default function FurnitureProperties({
             ),
           })
         }
+        style={{
+          width: "100%",
+          marginBottom: "10px",
+        }}
       />
 
-      <label>Scale</label>
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          marginBottom: "10px",
+        }}
+      >
+        <button
+          onClick={() =>
+            rotateFurniture(-15)
+          }
+        >
+          ↺ 15°
+        </button>
+
+        <button
+          onClick={() =>
+            rotateFurniture(15)
+          }
+        >
+          ↻ 15°
+        </button>
+      </div>
+
+      <button
+        onClick={() =>
+          updateFurniture({
+            rotation: 0,
+          })
+        }
+        style={{
+          marginBottom: "15px",
+        }}
+      >
+        Reset Rotation
+      </button>
+
+      {/* SCALE */}
+
+      <label>
+        Scale: {currentScale.toFixed(1)}
+      </label>
 
       <input
         type="number"
         step="0.1"
-        min="0.1"
-        value={furniture.scale}
+        min={MIN_SCALE}
+        max={MAX_SCALE}
+        value={currentScale}
         onChange={(event) =>
           updateFurniture({
             scale: Number(
@@ -125,16 +265,68 @@ export default function FurnitureProperties({
             ),
           })
         }
+        style={{
+          width: "100%",
+          marginBottom: "10px",
+        }}
       />
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          marginBottom: "20px",
+        }}
+      >
+        <button
+          onClick={() =>
+            changeScale(-0.1)
+          }
+        >
+          −
+        </button>
+
+        <span>
+          {currentScale.toFixed(1)}
+        </span>
+
+        <button
+          onClick={() =>
+            changeScale(0.1)
+          }
+        >
+          +
+        </button>
+      </div>
+
+      {/* DELETE */}
 
       <button
         onClick={deleteFurniture}
+        style={{
+          width: "100%",
+          padding: "10px",
+          background: "#e53935",
+          color: "white",
+          border: "none",
+          borderRadius: "6px",
+          cursor: "pointer",
+          marginBottom: "10px",
+        }}
       >
         Delete Furniture
       </button>
 
+      {/* CLOSE */}
+
       <button
         onClick={onClose}
+        style={{
+          width: "100%",
+          padding: "10px",
+          cursor: "pointer",
+        }}
       >
         Close
       </button>

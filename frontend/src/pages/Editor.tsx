@@ -3,9 +3,21 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+
 import { useProject } from "../context/ProjectContext";
 import FurnitureLibrary from "../components/FurnitureLibrary";
 import { furnitureLibrary } from "../data/furnitureData";
+import {
+  ROOM_WIDTH,
+  ROOM_HEIGHT,
+  GRID_SIZE,
+  MIN_SCALE,
+  MAX_SCALE,
+  SCALE_STEP,
+} from "../constants/editor";
+import { snapToGrid } from "../utils/editorUtils";
+
+import "./Editor.css";
 
 function getFurnitureEmoji(name: string) {
   const lowerName = name.toLowerCase();
@@ -21,6 +33,13 @@ function getFurnitureEmoji(name: string) {
   return "🪑";
 }
 
+function keepInsideRoom(x: number, y: number) {
+  return {
+    x: Math.max(0, Math.min(x, ROOM_WIDTH)),
+    y: Math.max(0, Math.min(y, ROOM_HEIGHT)),
+  };
+}
+
 function Editor() {
   const { project, setProject } = useProject();
 
@@ -28,33 +47,50 @@ function Editor() {
     useState<string | number | null>(null);
 
   const [zoom, setZoom] = useState(1);
-
   const [showGrid, setShowGrid] = useState(true);
-
   const [draggingId, setDraggingId] =
-    useState<number | null>(null);
+    useState<string | number | null>(null);
 
   const stageRef = useRef<HTMLDivElement | null>(null);
 
-  // --------------------------------------------------
-  // ADD FURNITURE
-  // --------------------------------------------------
+  // --------------------------------
+  // Update furniture helper
+  // --------------------------------
+
+  const updateFurniture = (
+    id: string | number,
+    changes: Record<string, unknown>
+  ) => {
+    setProject((currentProject) => ({
+      ...currentProject,
+      furniture: currentProject.furniture.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              ...changes,
+            }
+          : item
+      ),
+    }));
+  };
+
+  // --------------------------------
+  // Add furniture
+  // --------------------------------
 
   const handleAddFurniture = (furnitureId: string) => {
     const definition = furnitureLibrary.find(
       (item) => item.id === furnitureId
     );
 
-    if (!definition) {
-      return;
-    }
+    if (!definition) return;
 
     const newFurniture = {
       id: Date.now(),
       name: definition.name,
       category: definition.category,
-      x: 400,
-      y: 250,
+      x: ROOM_WIDTH / 2,
+      y: ROOM_HEIGHT / 2,
       rotation: 0,
       scale: definition.defaultScale ?? 1,
       image2D: definition.image2D,
@@ -72,13 +108,13 @@ function Editor() {
     setSelectedId(newFurniture.id);
   };
 
-  // --------------------------------------------------
-  // MOVE FURNITURE
-  // --------------------------------------------------
+  // --------------------------------
+  // Start dragging furniture
+  // --------------------------------
 
   const handlePointerDown = (
     event: ReactPointerEvent<HTMLDivElement>,
-    furnitureId: number
+    furnitureId: string | number
   ) => {
     event.stopPropagation();
 
@@ -89,6 +125,10 @@ function Editor() {
       event.pointerId
     );
   };
+
+  // --------------------------------
+  // Move furniture
+  // --------------------------------
 
   const handlePointerMove = (
     event: ReactPointerEvent<HTMLDivElement>
@@ -103,33 +143,39 @@ function Editor() {
     const rect =
       stageRef.current.getBoundingClientRect();
 
-    const newX =
+    const x =
       (event.clientX - rect.left) / zoom;
 
-    const newY =
+    const y =
       (event.clientY - rect.top) / zoom;
 
-    setProject((currentProject) => ({
-      ...currentProject,
-      furniture:
-        currentProject.furniture.map(
-          (item) =>
-            item.id === draggingId
-              ? {
-                  ...item,
-                  x: Math.max(
-                    20,
-                    Math.min(740, newX)
-                  ),
-                  y: Math.max(
-                    20,
-                    Math.min(480, newY)
-                  ),
-                }
-              : item
-        ),
-    }));
+    const snappedX = snapToGrid(
+      x,
+      GRID_SIZE
+    );
+
+    const snappedY = snapToGrid(
+      y,
+      GRID_SIZE
+    );
+
+    const position = keepInsideRoom(
+      snappedX,
+      snappedY
+    );
+
+    updateFurniture(
+      draggingId,
+      {
+        x: position.x,
+        y: position.y,
+      }
+    );
   };
+
+  // --------------------------------
+  // Stop dragging
+  // --------------------------------
 
   const handlePointerUp = (
     event: ReactPointerEvent<HTMLDivElement>
@@ -145,119 +191,94 @@ function Editor() {
     }
   };
 
-  // --------------------------------------------------
-  // ROTATION
-  // --------------------------------------------------
+  // --------------------------------
+  // Rotation
+  // --------------------------------
 
   const updateRotation = (value: number) => {
-    if (selectedId === null) {
-      return;
-    }
+    if (selectedId === null) return;
 
-    setProject((currentProject) => ({
-      ...currentProject,
-      furniture:
-        currentProject.furniture.map(
-          (item) =>
-            item.id === selectedId
-              ? {
-                  ...item,
-                  rotation: value,
-                }
-              : item
-        ),
-    }));
+    updateFurniture(
+      selectedId,
+      {
+        rotation: value,
+      }
+    );
   };
 
-  // --------------------------------------------------
-  // SCALE
-  // --------------------------------------------------
+  // --------------------------------
+  // Scale
+  // --------------------------------
 
   const updateScale = (value: number) => {
-    if (selectedId === null) {
-      return;
-    }
+    if (selectedId === null) return;
 
-    setProject((currentProject) => ({
-      ...currentProject,
-      furniture:
-        currentProject.furniture.map(
-          (item) =>
-            item.id === selectedId
-              ? {
-                  ...item,
-                  scale: value,
-                }
-              : item
-        ),
-    }));
+    updateFurniture(
+      selectedId,
+      {
+        scale: value,
+      }
+    );
   };
 
-  // --------------------------------------------------
-  // DELETE
-  // --------------------------------------------------
+  // --------------------------------
+  // Delete selected furniture
+  // --------------------------------
 
   const deleteSelectedFurniture = () => {
-    if (selectedId === null) {
-      return;
-    }
+    if (selectedId === null) return;
 
     setProject((currentProject) => ({
       ...currentProject,
       furniture:
         currentProject.furniture.filter(
-          (item) =>
-            item.id !== selectedId
+          (item) => item.id !== selectedId
         ),
     }));
 
     setSelectedId(null);
   };
 
-  // --------------------------------------------------
-  // ZOOM
-  // --------------------------------------------------
-
-  const resetZoom = () => {
-    setZoom(1);
-  };
-
-  // --------------------------------------------------
-  // SELECTED FURNITURE
-  // --------------------------------------------------
+  // --------------------------------
+  // Selected furniture
+  // --------------------------------
 
   const selectedFurniture =
     project.furniture.find(
-      (item) =>
-        item.id === selectedId
+      (item) => item.id === selectedId
     );
-
-  // --------------------------------------------------
-  // RENDER
-  // --------------------------------------------------
 
   return (
     <div
       style={{
+        display: "flex",
         minHeight: "100vh",
-        background: "#ffffff",
-        fontFamily: "Arial, sans-serif",
+        background: "#f5f5f5",
       }}
     >
-      {/* HEADER */}
+      {/* ================================= */}
+      {/* LEFT - Furniture Library */}
+      {/* ================================= */}
 
-      <header
+      <FurnitureLibrary
+        onAddFurniture={handleAddFurniture}
+      />
+
+      {/* ================================= */}
+      {/* CENTER - 2D Editor */}
+      {/* ================================= */}
+
+      <div
         style={{
-          textAlign: "center",
-          paddingTop: "20px",
-          paddingBottom: "10px",
+          flex: 1,
+          padding: "24px",
+          overflow: "auto",
         }}
       >
         <h1
           style={{
-            fontSize: "48px",
-            margin: 0,
-            fontWeight: 700,
+            marginTop: 0,
+            marginBottom: "8px",
           }}
         >
           2D Room Editor
@@ -265,607 +286,427 @@ function Editor() {
 
         <p
           style={{
-            fontSize: "18px",
-            color: "#a06080",
-            marginTop: "8px",
+            color: "#666",
+            marginTop: 0,
           }}
         >
-          Arrange your furniture and create
-          your room layout.
+          Drag furniture to position it in your room.
         </p>
-      </header>
 
-      {/* MAIN LAYOUT */}
-
-      <div
-        style={{
-          display: "flex",
-          gap: "20px",
-          padding: "0 30px 30px",
-          alignItems: "flex-start",
-        }}
-      >
-        {/* FURNITURE LIBRARY */}
-
-        <FurnitureLibrary
-          onAddFurniture={
-            handleAddFurniture
-          }
-        />
-
-        {/* CENTER EDITOR */}
+        {/* Editor controls */}
 
         <div
           style={{
-            flex: 1,
-            minWidth: 0,
+            display: "flex",
+            gap: "10px",
+            alignItems: "center",
+            marginBottom: "15px",
+            flexWrap: "wrap",
           }}
         >
-          {/* TOOLBAR */}
-
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              marginBottom: "20px",
-              flexWrap: "wrap",
-            }}
+          <button
+            onClick={() =>
+              setZoom((value) =>
+                Math.max(0.5, value - 0.1)
+              )
+            }
           >
-            <button
-              onClick={() =>
-                setZoom(
-                  Math.min(
-                    2,
-                    zoom + 0.1
-                  )
-                )
-              }
-            >
-              🔍+
-            </button>
+            −
+          </button>
 
-            <button
-              onClick={() =>
-                setZoom(
-                  Math.max(
-                    0.5,
-                    zoom - 0.1
-                  )
-                )
-              }
-            >
-              🔍-
-            </button>
+          <span>
+            Zoom: {Math.round(zoom * 100)}%
+          </span>
 
-            <button onClick={resetZoom}>
-              Reset Zoom
-            </button>
-
-            <button
-              onClick={() =>
-                setShowGrid(!showGrid)
-              }
-            >
-              {showGrid
-                ? "Hide Grid"
-                : "Show Grid"}
-            </button>
-
-            <button
-              onClick={() =>
-                setSelectedId(null)
-              }
-            >
-              Clear Selection
-            </button>
-          </div>
-
-          {/* ROOM */}
-
-          <div
-            style={{
-              width: "100%",
-              overflow: "auto",
-            }}
+          <button
+            onClick={() =>
+              setZoom((value) =>
+                Math.min(2, value + 0.1)
+              )
+            }
           >
-            <div
-              ref={stageRef}
-              onPointerMove={
-                handlePointerMove
-              }
-              onPointerUp={
-                handlePointerUp
-              }
-              onPointerLeave={
-                handlePointerUp
-              }
-              onClick={() =>
-                setSelectedId(null)
-              }
-              onDragOver={(event) => {
-                event.preventDefault();
+            +
+          </button>
 
-                event.dataTransfer.dropEffect =
-                  "copy";
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-
-                const furnitureId =
-                  event.dataTransfer.getData(
-                    "furnitureId"
-                  );
-
-                const furniture =
-                  furnitureLibrary.find(
-                    (item) =>
-                      item.id === furnitureId
-                  );
-
-                if (!furniture) {
-                  return;
-                }
-
-                const rect =
-                  event.currentTarget.getBoundingClientRect();
-
-                const x =
-                  (event.clientX -
-                    rect.left) /
-                  zoom;
-
-                const y =
-                  (event.clientY -
-                    rect.top) /
-                  zoom;
-
-                const newFurniture = {
-                  id: Date.now(),
-                  name: furniture.name,
-                  category:
-                    furniture.category,
-                  x,
-                  y,
-                  rotation: 0,
-                  scale:
-                    furniture.defaultScale ??
-                    1,
-                  image2D:
-                    furniture.image2D,
-                  model3D:
-                    furniture.model3D,
-                };
-
-                setProject(
-                  (currentProject) => ({
-                    ...currentProject,
-                    furniture: [
-                      ...currentProject.furniture,
-                      newFurniture,
-                    ],
-                  })
-                );
-
-                setSelectedId(
-                  newFurniture.id
-                );
-              }}
-              style={{
-                width: "760px",
-                height: "500px",
-                position: "relative",
-                overflow: "hidden",
-                border: "2px solid #333",
-                backgroundColor: "#eee",
-                backgroundImage:
-                  project.roomImage
-                    ? `url(${project.roomImage})`
-                    : undefined,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                transform: `scale(${zoom})`,
-                transformOrigin: "top left",
-                cursor:
-                  draggingId !== null
-                    ? "grabbing"
-                    : "default",
-              }}
-            >
-              {/* GRID */}
-
-              {showGrid && (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    pointerEvents: "none",
-                    backgroundImage: `
-                      linear-gradient(
-                        rgba(0,0,0,0.12) 1px,
-                        transparent 1px
-                      ),
-                      linear-gradient(
-                        90deg,
-                        rgba(0,0,0,0.12) 1px,
-                        transparent 1px
-                      )
-                    `,
-                    backgroundSize:
-                      "50px 50px",
-                  }}
-                />
-              )}
-
-              {/* NO ROOM IMAGE */}
-
-              {!project.roomImage && (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#777",
-                    fontSize: "20px",
-                    pointerEvents: "none",
-                  }}
-                >
-                  No room image uploaded
-                </div>
-              )}
-
-              {/* FURNITURE */}
-
-              {project.furniture.map(
-                (item) => (
-                  <div
-                    key={item.id}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setSelectedId(item.id);
-                    }}
-                    onPointerDown={(event) =>
-                      handlePointerDown(
-                        event,
-                        item.id
-                      )
-                    }
-                    style={{
-                      position: "absolute",
-                      left: item.x,
-                      top: item.y,
-                      transform: `
-                        rotate(${item.rotation ?? 0}deg)
-                        scale(${item.scale ?? 1})
-                      `,
-                      cursor:
-                        draggingId === item.id
-                          ? "grabbing"
-                          : "grab",
-                      padding: "10px",
-                      border:
-                        selectedId === item.id
-                          ? "2px solid blue"
-                          : "1px solid transparent",
-                      borderRadius: "8px",
-                      background:
-                        selectedId === item.id
-                          ? "#eef4ff"
-                          : "transparent",
-                      userSelect: "none",
-                    }}
-                  >
-                    {getFurnitureEmoji(
-                      item.name
-                    )}{" "}
-                    {item.name}
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-
-          {/* PROJECT FURNITURE LIST */}
-
-          <div
-            style={{
-              marginTop: "30px",
-              padding: "20px",
-              background: "#f5f5f5",
-              borderRadius: "12px",
-            }}
+          <button
+            onClick={() =>
+              setZoom(1)
+            }
           >
-            <h2
-              style={{
-                textAlign: "center",
-              }}
-            >
-              Furniture in Project
-            </h2>
+            Reset Zoom
+          </button>
 
-            {project.furniture.length ===
-              0 && (
-              <p
-                style={{
-                  textAlign: "center",
-                  color: "#777",
-                }}
-              >
-                No furniture added yet.
-              </p>
-            )}
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "6px",
-              }}
-            >
-              {project.furniture.map(
-                (item) => (
-                  <div
-                    key={item.id}
-                    onClick={() =>
-                      setSelectedId(
-                        item.id
-                      )
-                    }
-                    style={{
-                      border:
-                        selectedId ===
-                        item.id
-                          ? "2px solid blue"
-                          : "1px solid transparent",
-                      cursor: "pointer",
-                      padding: "10px",
-                      borderRadius: "8px",
-                      background:
-                        selectedId ===
-                        item.id
-                          ? "#eef4ff"
-                          : "transparent",
-                    }}
-                  >
-                    {getFurnitureEmoji(
-                      item.name
-                    )}{" "}
-                    {item.name}
-                  </div>
-                )
-              )}
-            </div>
-          </div>
+          <button
+            onClick={() =>
+              setShowGrid((value) => !value)
+            }
+          >
+            {showGrid
+              ? "Hide Grid"
+              : "Show Grid"}
+          </button>
         </div>
 
-        {/* PROPERTIES */}
+        {/* Room dimensions */}
 
         <div
           style={{
-            width: "280px",
-            flexShrink: 0,
+            marginBottom: "10px",
+            fontSize: "14px",
+            color: "#666",
           }}
         >
-          <div
-            style={{
-              border: "1px solid #ddd",
-              borderRadius: "12px",
-              padding: "20px",
-              background: "#ffffff",
-            }}
-          >
-            <h2
+          Room: {ROOM_WIDTH} × {ROOM_HEIGHT}
+        </div>
+
+        {/* ================================= */}
+        {/* ROOM */}
+        {/* ================================= */}
+
+        <div
+          ref={stageRef}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
+          onClick={() => setSelectedId(null)}
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+
+            const furnitureId =
+              event.dataTransfer.getData(
+                "furnitureId"
+              );
+
+            if (furnitureId) {
+              handleAddFurniture(
+                furnitureId
+              );
+            }
+          }}
+          style={{
+            width: ROOM_WIDTH,
+            height: ROOM_HEIGHT,
+            position: "relative",
+            overflow: "hidden",
+            border: "2px solid #333",
+            backgroundColor: "#f8f8f8",
+            transform: `scale(${zoom})`,
+            transformOrigin: "top left",
+            cursor:
+              draggingId !== null
+                ? "grabbing"
+                : "default",
+          }}
+        >
+          {/* ================================= */}
+          {/* GRID */}
+          {/* ================================= */}
+
+          {showGrid && (
+            <div
               style={{
-                textAlign: "center",
-                marginTop: 0,
+                position: "absolute",
+                inset: 0,
+                pointerEvents: "none",
+                backgroundImage: `
+                  linear-gradient(
+                    rgba(0,0,0,0.12) 1px,
+                    transparent 1px
+                  ),
+                  linear-gradient(
+                    90deg,
+                    rgba(0,0,0,0.12) 1px,
+                    transparent 1px
+                  )
+                `,
+                backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
+              }}
+            />
+          )}
+
+          {/* ================================= */}
+          {/* FURNITURE */}
+          {/* ================================= */}
+
+          {project.furniture.map((item) => (
+            <div
+              key={item.id}
+              onClick={(event) => {
+                event.stopPropagation();
+                setSelectedId(item.id);
+              }}
+              onPointerDown={(event) =>
+                handlePointerDown(
+                  event,
+                  item.id
+                )
+              }
+              style={{
+                position: "absolute",
+                left: item.x,
+                top: item.y,
+
+                transform: `
+                  translate(-50%, -50%)
+                  rotate(${item.rotation ?? 0}deg)
+                  scale(${item.scale ?? 1})
+                `,
+
+                border:
+                  selectedId === item.id
+                    ? "2px solid #333"
+                    : "none",
+
+                padding: "20px",
+
+                cursor:
+                  draggingId === item.id
+                    ? "grabbing"
+                    : "grab",
+
+                borderRadius: "8px",
+
+                background:
+                  selectedId === item.id
+                    ? "#eef4ff"
+                    : "transparent",
+
+                userSelect: "none",
+                zIndex:
+                  selectedId === item.id
+                    ? 10
+                    : 1,
               }}
             >
-              Properties
-            </h2>
+              {getFurnitureEmoji(item.name)}{" "}
+              {item.name}
 
-            {!selectedFurniture && (
-              <p
-                style={{
-                  textAlign: "center",
-                  color: "#777",
-                }}
-              >
-                Select furniture to edit it.
-              </p>
-            )}
+              {/* Rotation handle */}
 
-            {selectedFurniture && (
-              <>
-                <h3>
-                  {selectedFurniture.name}
-                </h3>
-
-                <p>
-                  Category:{" "}
-                  {selectedFurniture.category ||
-                    "Furniture"}
-                </p>
-
-                <hr />
-
-                <label>
-                  X Position
-                </label>
-
-                <input
-                  type="number"
-                  value={Math.round(
-                    selectedFurniture.x
-                  )}
-                  onChange={(event) => {
-                    const value =
-                      Number(
-                        event.target.value
-                      );
-
-                    setProject(
-                      (currentProject) => ({
-                        ...currentProject,
-                        furniture:
-                          currentProject.furniture.map(
-                            (item) =>
-                              item.id ===
-                              selectedId
-                                ? {
-                                    ...item,
-                                    x: value,
-                                  }
-                                : item
-                          ),
-                      })
-                    );
-                  }}
-                  style={{
-                    width: "100%",
-                    marginTop: "5px",
-                    marginBottom: "12px",
-                    padding: "8px",
-                    boxSizing:
-                      "border-box",
-                  }}
-                />
-
-                <label>
-                  Y Position
-                </label>
-
-                <input
-                  type="number"
-                  value={Math.round(
-                    selectedFurniture.y
-                  )}
-                  onChange={(event) => {
-                    const value =
-                      Number(
-                        event.target.value
-                      );
-
-                    setProject(
-                      (currentProject) => ({
-                        ...currentProject,
-                        furniture:
-                          currentProject.furniture.map(
-                            (item) =>
-                              item.id ===
-                              selectedId
-                                ? {
-                                    ...item,
-                                    y: value,
-                                  }
-                                : item
-                          ),
-                      })
-                    );
-                  }}
-                  style={{
-                    width: "100%",
-                    marginTop: "5px",
-                    marginBottom: "12px",
-                    padding: "8px",
-                    boxSizing:
-                      "border-box",
-                  }}
-                />
-
-                <label>
-                  Rotation
-                </label>
-
-                <input
-                  type="range"
-                  min="-180"
-                  max="180"
-                  value={
-                    selectedFurniture.rotation ??
-                    0
-                  }
-                  onChange={(event) =>
-                    updateRotation(
-                      Number(
-                        event.target.value
-                      )
-                    )
-                  }
-                  style={{
-                    width: "100%",
-                  }}
-                />
-
+              {selectedId === item.id && (
                 <div
-                  style={{
-                    textAlign: "center",
-                    marginBottom: "15px",
-                  }}
-                >
-                  {selectedFurniture.rotation ??
-                    0}
-                  °
-                </div>
-
-                <label>
-                  Scale
-                </label>
-
-                <input
-                  type="range"
-                  min="0.5"
-                  max="2"
-                  step="0.1"
-                  value={
-                    selectedFurniture.scale ??
-                    1
-                  }
-                  onChange={(event) =>
-                    updateScale(
-                      Number(
-                        event.target.value
-                      )
-                    )
+                  onPointerDown={(event) =>
+                    event.stopPropagation()
                   }
                   style={{
-                    width: "100%",
-                  }}
-                />
-
-                <div
-                  style={{
-                    textAlign: "center",
-                    marginBottom: "15px",
-                  }}
-                >
-                  {(
-                    selectedFurniture.scale ??
-                    1
-                  ).toFixed(1)}
-                </div>
-
-                <button
-                  onClick={
-                    deleteSelectedFurniture
-                  }
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    border: "none",
-                    borderRadius: "6px",
-                    background: "#dc2626",
-                    color: "white",
+                    position: "absolute",
+                    top: "-35px",
+                    left: "50%",
+                    transform:
+                      "translateX(-50%)",
+                    fontSize: "20px",
                     cursor: "pointer",
                   }}
                 >
-                  Delete Furniture
-                </button>
-              </>
-            )}
-          </div>
+                  ↻
+                </div>
+              )}
+
+              {/* Resize handles */}
+
+              {selectedId === item.id && (
+                <>
+                  <div
+                    className="resize-handle top-left"
+                    onPointerDown={(event) =>
+                      event.stopPropagation()
+                    }
+                  />
+
+                  <div
+                    className="resize-handle top-right"
+                    onPointerDown={(event) =>
+                      event.stopPropagation()
+                    }
+                  />
+
+                  <div
+                    className="resize-handle bottom-left"
+                    onPointerDown={(event) =>
+                      event.stopPropagation()
+                    }
+                  />
+
+                  <div
+                    className="resize-handle bottom-right"
+                    onPointerDown={(event) =>
+                      event.stopPropagation()
+                    }
+                  />
+                </>
+              )}
+            </div>
+          ))}
         </div>
+      </div>
+
+      {/* ================================= */}
+      {/* RIGHT - Properties */}
+      {/* ================================= */}
+
+      <div
+        style={{
+          width: "260px",
+          padding: "24px",
+          background: "white",
+          borderLeft: "1px solid #ddd",
+        }}
+      >
+        <h2>
+          Furniture Properties
+        </h2>
+
+        {!selectedFurniture && (
+          <p
+            style={{
+              color: "#666",
+            }}
+          >
+            Select a furniture item
+            to edit its properties.
+          </p>
+        )}
+
+        {selectedFurniture && (
+          <>
+            <h3>
+              {getFurnitureEmoji(
+                selectedFurniture.name
+              )}{" "}
+              {selectedFurniture.name}
+            </h3>
+
+            {/* X Position */}
+
+            <label>
+              X Position
+            </label>
+
+            <input
+              type="number"
+              value={selectedFurniture.x}
+              onChange={(event) =>
+                updateFurniture(
+                  selectedFurniture.id,
+                  {
+                    x: Number(
+                      event.target.value
+                    ),
+                  }
+                )
+              }
+              style={{
+                width: "100%",
+                marginBottom: "12px",
+              }}
+            />
+
+            {/* Y Position */}
+
+            <label>
+              Y Position
+            </label>
+
+            <input
+              type="number"
+              value={selectedFurniture.y}
+              onChange={(event) =>
+                updateFurniture(
+                  selectedFurniture.id,
+                  {
+                    y: Number(
+                      event.target.value
+                    ),
+                  }
+                )
+              }
+              style={{
+                width: "100%",
+                marginBottom: "12px",
+              }}
+            />
+
+            {/* Rotation */}
+
+            <label>
+              Rotation:{" "}
+              {selectedFurniture.rotation ?? 0}°
+            </label>
+
+            <input
+              type="range"
+              min="0"
+              max="360"
+              value={
+                selectedFurniture.rotation ?? 0
+              }
+              onChange={(event) =>
+                updateRotation(
+                  Number(
+                    event.target.value
+                  )
+                )
+              }
+              style={{
+                width: "100%",
+                marginBottom: "12px",
+              }}
+            />
+
+            {/* Scale */}
+
+            <label>
+              Scale:{" "}
+              {(
+                selectedFurniture.scale ?? 1
+              ).toFixed(1)}
+            </label>
+
+            <input
+              type="range"
+              min={MIN_SCALE}
+              max={MAX_SCALE}
+              step={SCALE_STEP}
+              value={
+                selectedFurniture.scale ?? 1
+              }
+              onChange={(event) =>
+                updateScale(
+                  Number(
+                    event.target.value
+                  )
+                )
+              }
+              style={{
+                width: "100%",
+                marginBottom: "20px",
+              }}
+            />
+
+            {/* Delete */}
+
+            <button
+              onClick={
+                deleteSelectedFurniture
+              }
+              style={{
+                width: "100%",
+                padding: "10px",
+                background: "#e53935",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              Delete Furniture
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
