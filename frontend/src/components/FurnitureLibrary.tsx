@@ -25,16 +25,28 @@ export default function FurnitureLibrary({
         background: "#f5f5f5",
         borderRadius: "12px",
         border: "1px solid #ddd",
+        boxSizing: "border-box",
+        height: "100%",
+        overflowY: "auto",
       }}
     >
+      {/* ================================= */}
+      {/* TITLE */}
+      {/* ================================= */}
+
       <h2
         style={{
           marginTop: 0,
+          marginBottom: "15px",
           textAlign: "center",
         }}
       >
         Furniture Library
       </h2>
+
+      {/* ================================= */}
+      {/* SEARCH */}
+      {/* ================================= */}
 
       <input
         type="text"
@@ -50,69 +62,137 @@ export default function FurnitureLibrary({
           borderRadius: "8px",
           border: "1px solid #ddd",
           boxSizing: "border-box",
+          outline: "none",
         }}
       />
 
-      {categories.map((category) => (
-        <div key={category}>
-          <h3>{category}</h3>
+      {/* ================================= */}
+      {/* CATEGORIES */}
+      {/* ================================= */}
 
+      {categories.map((category) => {
+        const filteredFurniture =
+          furnitureLibrary
+            .filter(
+              (item) =>
+                item.category === category
+            )
+            .filter((item) =>
+              item.name
+                .toLowerCase()
+                .includes(
+                  search.toLowerCase()
+                )
+            );
+
+        return (
           <div
+            key={category}
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "8px",
+              marginBottom: "20px",
             }}
           >
-            {furnitureLibrary
-              .filter(
-                (item) =>
-                  item.category === category
-              )
-              .filter((item) =>
-                item.name
-                  .toLowerCase()
-                  .includes(search.toLowerCase())
-              )
-              .map((item) => (
-                <button
-                  key={item.id}
-                  draggable
-                  onClick={() =>
-                    onAddFurniture(item.id)
-                  }
-                  onDragStart={(event) => {
-                    event.dataTransfer.setData(
-                      "furnitureId",
-                      item.id
-                    );
+            {/* Category title */}
 
-                    event.dataTransfer.effectAllowed =
-                      "copy";
-                  }}
-                  style={{
-                    padding: "15px",
-                    border: "1px solid #ddd",
-                    borderRadius: "10px",
-                    background: "white",
-                    cursor: "grab",
-                  }}
-                >
-                  <div
+            <h3
+              style={{
+                marginBottom: "10px",
+                fontSize: "16px",
+              }}
+            >
+              {category}
+            </h3>
+
+            {/* Furniture grid */}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "1fr 1fr",
+                gap: "8px",
+              }}
+            >
+              {filteredFurniture.map(
+                (item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    draggable
+
+                  
+                    onClick={() =>
+                      onAddFurniture(
+                        item.id
+                      )
+                    }
+
+                  
+                    onDragStart={(event) => {
+                      event.dataTransfer.setData(
+                        "furnitureId",
+                        item.id
+                      );
+
+                      event.dataTransfer.effectAllowed =
+                        "copy";
+                    }}
+
                     style={{
-                      fontSize: "28px",
-                      marginBottom: "5px",
+                      padding: "12px 8px",
+                      border:
+                        "1px solid #ddd",
+                      borderRadius: "10px",
+                      background: "white",
+                      cursor: "grab",
+                      textAlign: "center",
+                      transition:
+                        "transform 0.1s ease",
                     }}
                   >
-                    {getFurnitureEmoji(item.name)}
-                  </div>
+                    {/* Emoji */}
 
-                  <div>{item.name}</div>
-                </button>
-              ))}
+                    <div
+                      style={{
+                        fontSize: "28px",
+                        marginBottom: "5px",
+                      }}
+                    >
+                      {getFurnitureEmoji(
+                        item.name
+                      )}
+                    </div>
+
+                    {/* Name */}
+
+                    <div
+                      style={{
+                        fontSize: "13px",
+                      }}
+                    >
+                      {item.name}
+                    </div>
+                  </button>
+                )
+              )}
+            </div>
+
+            {/* No results */}
+
+            {filteredFurniture.length ===
+              0 && (
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "#888",
+                }}
+              >
+                No furniture found.
+              </p>
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -122,7 +202,8 @@ export default function FurnitureLibrary({
 // ---------------------------------------------
 
 function getFurnitureEmoji(name: string) {
-  const lowerName = name.toLowerCase();
+  const lowerName =
+    name.toLowerCase();
 
   if (lowerName.includes("sofa")) {
     return "🛋️";

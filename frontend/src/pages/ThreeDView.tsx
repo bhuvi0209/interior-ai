@@ -436,7 +436,7 @@ function getFurnitureModel(name: string) {
 --------------------------------- */
 
 interface Furniture3DProps {
-  id: number;
+  id: string |number;
   name: string;
   x: number;
   y: number;
@@ -567,10 +567,10 @@ interface SceneProps {
     React.SetStateAction<Project>
   >;
 
-  selectedId: number | null;
+  selectedId: string | number | null;
 
   setSelectedId: (
-    id: number | null
+    id: string | number | null
   ) => void;
 
   transformMode: "translate" | "rotate";
@@ -700,7 +700,7 @@ function ThreeDView() {
   const [
     selectedId,
     setSelectedId,
-  ] = useState<number | null>(null);
+  ] = useState< string |number | null>(null);
 
   const [
     transformMode,

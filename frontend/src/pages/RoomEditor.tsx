@@ -41,8 +41,16 @@ function RoomBackground({
 function RoomEditor() {
   const { project, setProject } = useProject();
 
+  // ---------------------------------------------
+  // SELECTED FURNITURE
+  // ---------------------------------------------
+
   const [selectedId, setSelectedId] =
-    useState<number | null>(null);
+    useState<string | number | null>(null);
+
+  // ---------------------------------------------
+  // EDITOR STATE
+  // ---------------------------------------------
 
   const [zoom, setZoom] = useState(1);
 
@@ -51,14 +59,22 @@ function RoomEditor() {
   const canvasWidth = 800;
   const canvasHeight = 500;
 
+  // ---------------------------------------------
+  // SELECTED FURNITURE
+  // ---------------------------------------------
+
   const selectedFurniture =
     project.furniture.find(
       (item) => item.id === selectedId
     );
 
+  // ---------------------------------------------
+  // UPDATE FURNITURE
+  // ---------------------------------------------
+
   const updateFurniture = (
-    id: number,
-    changes: any
+    id: string | number,
+    changes: Record<string, unknown>
   ) => {
     setProject((currentProject) => ({
       ...currentProject,
@@ -75,6 +91,10 @@ function RoomEditor() {
     }));
   };
 
+  // ---------------------------------------------
+  // DELETE FURNITURE
+  // ---------------------------------------------
+
   const deleteFurniture = () => {
     if (selectedId === null) {
       return;
@@ -83,13 +103,18 @@ function RoomEditor() {
     setProject((currentProject) => ({
       ...currentProject,
 
-      furniture: currentProject.furniture.filter(
-        (item) => item.id !== selectedId
-      ),
+      furniture:
+        currentProject.furniture.filter(
+          (item) => item.id !== selectedId
+        ),
     }));
 
     setSelectedId(null);
   };
+
+  // ---------------------------------------------
+  // ROTATE FURNITURE
+  // ---------------------------------------------
 
   const rotateFurniture = () => {
     if (!selectedFurniture) {
@@ -104,7 +129,13 @@ function RoomEditor() {
     });
   };
 
-  const resizeFurniture = (amount: number) => {
+  // ---------------------------------------------
+  // RESIZE FURNITURE
+  // ---------------------------------------------
+
+  const resizeFurniture = (
+    amount: number
+  ) => {
     if (!selectedFurniture) {
       return;
     }
@@ -122,6 +153,10 @@ function RoomEditor() {
     });
   };
 
+  // ---------------------------------------------
+  // RENDER
+  // ---------------------------------------------
+
   return (
     <div
       style={{
@@ -136,7 +171,9 @@ function RoomEditor() {
         layout.
       </p>
 
+      {/* ========================================= */}
       {/* TOOLBAR */}
+      {/* ========================================= */}
 
       <div
         style={{
@@ -147,6 +184,7 @@ function RoomEditor() {
         }}
       >
         <button
+          type="button"
           onClick={() =>
             setZoom((value) =>
               Math.min(value + 0.1, 2)
@@ -157,6 +195,7 @@ function RoomEditor() {
         </button>
 
         <button
+          type="button"
           onClick={() =>
             setZoom((value) =>
               Math.max(value - 0.1, 0.5)
@@ -167,12 +206,14 @@ function RoomEditor() {
         </button>
 
         <button
+          type="button"
           onClick={() => setZoom(1)}
         >
           Reset Zoom
         </button>
 
         <button
+          type="button"
           onClick={() =>
             setShowGrid((value) => !value)
           }
@@ -183,7 +224,10 @@ function RoomEditor() {
         </button>
 
         <button
-          onClick={() => setSelectedId(null)}
+          type="button"
+          onClick={() =>
+            setSelectedId(null)
+          }
         >
           Clear Selection
         </button>
@@ -191,12 +235,14 @@ function RoomEditor() {
         {selectedFurniture && (
           <>
             <button
+              type="button"
               onClick={rotateFurniture}
             >
               ↻ Rotate
             </button>
 
             <button
+              type="button"
               onClick={() =>
                 resizeFurniture(0.1)
               }
@@ -205,6 +251,7 @@ function RoomEditor() {
             </button>
 
             <button
+              type="button"
               onClick={() =>
                 resizeFurniture(-0.1)
               }
@@ -213,6 +260,7 @@ function RoomEditor() {
             </button>
 
             <button
+              type="button"
               onClick={deleteFurniture}
             >
               🗑 Delete
@@ -221,7 +269,9 @@ function RoomEditor() {
         )}
       </div>
 
+      {/* ========================================= */}
       {/* MAIN EDITOR */}
+      {/* ========================================= */}
 
       <div
         style={{
@@ -230,7 +280,9 @@ function RoomEditor() {
           alignItems: "flex-start",
         }}
       >
+        {/* ========================================= */}
         {/* CANVAS */}
+        {/* ========================================= */}
 
         <div
           style={{
@@ -294,7 +346,9 @@ function RoomEditor() {
               {project.furniture.map((item) => (
                 <Text
                   key={item.id}
-                  text={getFurnitureEmoji(item.name)}
+                  text={getFurnitureEmoji(
+                    item.name
+                  )}
                   x={item.x}
                   y={item.y}
                   fontSize={50}
@@ -323,7 +377,9 @@ function RoomEditor() {
           </Stage>
         </div>
 
+        {/* ========================================= */}
         {/* PROPERTIES */}
+        {/* ========================================= */}
 
         <div
           style={{
@@ -383,7 +439,9 @@ function RoomEditor() {
         </div>
       </div>
 
+      {/* ========================================= */}
       {/* PROJECT INFORMATION */}
+      {/* ========================================= */}
 
       <div
         style={{
@@ -402,7 +460,9 @@ function RoomEditor() {
         ) : (
           project.furniture.map((item) => (
             <div key={item.id}>
-              {getFurnitureEmoji(item.name)}{" "}
+              {getFurnitureEmoji(
+                item.name
+              )}{" "}
               {item.name}
             </div>
           ))
@@ -411,6 +471,10 @@ function RoomEditor() {
     </div>
   );
 }
+
+// ---------------------------------------------
+// CREATE GRID
+// ---------------------------------------------
 
 function createGrid(
   width: number,
@@ -454,6 +518,10 @@ function createGrid(
 
   return lines;
 }
+
+// ---------------------------------------------
+// FURNITURE EMOJI
+// ---------------------------------------------
 
 function getFurnitureEmoji(name: string) {
   switch (name) {

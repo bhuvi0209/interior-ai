@@ -1,5 +1,5 @@
 export interface FurnitureItem {
-  id: number;
+  id: string | number;
 
   name: string;
 
@@ -12,7 +12,9 @@ export interface FurnitureItem {
   rotation?: number;
 
   scale?: number;
-
+  width?: number;
+  depth?: number;
+  height?: number;
   image2D?: string;
 
   model3D?: string;

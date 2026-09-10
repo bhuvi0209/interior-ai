@@ -1,25 +1,25 @@
-import {
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
-
+import { useRef, useState } from "react";
 import Moveable from "react-moveable";
+
 import { useProject } from "../context/ProjectContext";
 import FurnitureLibrary from "../components/FurnitureLibrary";
+import FurnitureProperties from "../components/FurnitureProperties";
+
 import { furnitureLibrary } from "../data/furnitureData";
 
 import {
   ROOM_WIDTH,
   ROOM_HEIGHT,
   GRID_SIZE,
-  MIN_SCALE,
-  MAX_SCALE,
-  SCALE_STEP,
 } from "../constants/editor";
 
 import { snapToGrid } from "../utils/editorUtils";
+
 import "./Editor.css";
+
+// ---------------------------------------------
+// FURNITURE EMOJI
+// ---------------------------------------------
 
 function getFurnitureEmoji(name: string) {
   const lowerName = name.toLowerCase();
@@ -31,9 +31,15 @@ function getFurnitureEmoji(name: string) {
   if (lowerName.includes("lamp")) return "💡";
   if (lowerName.includes("plant")) return "🌱";
   if (lowerName.includes("wardrobe")) return "🚪";
+  if (lowerName.includes("rug")) return "🟫";
+  if (lowerName.includes("tv")) return "📺";
 
   return "🪑";
 }
+
+// ---------------------------------------------
+// KEEP FURNITURE INSIDE ROOM
+// ---------------------------------------------
 
 function keepInsideRoom(x: number, y: number) {
   return {
@@ -42,27 +48,34 @@ function keepInsideRoom(x: number, y: number) {
   };
 }
 
+// ---------------------------------------------
+// EDITOR
+// ---------------------------------------------
+
 function Editor() {
   const { project, setProject } = useProject();
 
+  // Selected furniture ID
   const [selectedId, setSelectedId] =
     useState<string | number | null>(null);
 
+  // DOM element controlled by Moveable
   const [target, setTarget] =
     useState<HTMLElement | null>(null);
 
+  // Zoom
   const [zoom, setZoom] = useState(1);
 
+  // Grid
   const [showGrid, setShowGrid] = useState(true);
 
-  const [draggingId, setDraggingId] =
-    useState<string | number | null>(null);
+  // Room reference
+  const stageRef =
+    useRef<HTMLDivElement | null>(null);
 
-  const stageRef = useRef<HTMLDivElement | null>(null);
-
-  // --------------------------------
-  // Update furniture helper
-  // --------------------------------
+  // ---------------------------------------------
+  // UPDATE FURNITURE
+  // ---------------------------------------------
 
   const updateFurniture = (
     id: string | number,
@@ -70,42 +83,61 @@ function Editor() {
   ) => {
     setProject((currentProject) => ({
       ...currentProject,
-      furniture: currentProject.furniture.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              ...changes,
-            }
-          : item
+
+      furniture: currentProject.furniture.map(
+        (item) =>
+          item.id === id
+            ? {
+                ...item,
+                ...changes,
+              }
+            : item
       ),
     }));
   };
 
-  // --------------------------------
-  // Add furniture
-  // --------------------------------
+  // ---------------------------------------------
+  // ADD FURNITURE
+  // ---------------------------------------------
 
-  const handleAddFurniture = (furnitureId: string) => {
-    const definition = furnitureLibrary.find(
-      (item) => item.id === furnitureId
-    );
+  const handleAddFurniture = (
+    furnitureId: string
+  ) => {
+    const definition =
+      furnitureLibrary.find(
+        (item) => item.id === furnitureId
+      );
 
     if (!definition) return;
 
     const newFurniture = {
       id: Date.now(),
+
       name: definition.name,
+
       category: definition.category,
+
       x: ROOM_WIDTH / 2,
+
       y: ROOM_HEIGHT / 2,
+
       rotation: 0,
-      scale: definition.defaultScale ?? 1,
-      image2D: definition.image2D,
+
+      scale:
+        definition.defaultScale ?? 1,
+
+      width: definition.width,
+
+      depth: definition.depth,
+
+      height: definition.height,
+
       model3D: definition.model3D,
     };
 
     setProject((currentProject) => ({
       ...currentProject,
+
       furniture: [
         ...currentProject.furniture,
         newFurniture,
@@ -113,168 +145,36 @@ function Editor() {
     }));
 
     setSelectedId(newFurniture.id);
-  };
 
-  // --------------------------------
-  // Start dragging furniture
-  // --------------------------------
-
-  const handlePointerDown = (
-    event: ReactPointerEvent<HTMLDivElement>,
-    furnitureId: string | number
-  ) => {
-    event.stopPropagation();
-
-    setSelectedId(furnitureId);
-    setDraggingId(furnitureId);
-
-    event.currentTarget.setPointerCapture(
-      event.pointerId
-    );
-  };
-
-  // --------------------------------
-  // Move furniture
-  // --------------------------------
-
-  const handlePointerMove = (
-    event: ReactPointerEvent<HTMLDivElement>
-  ) => {
-    if (
-      draggingId === null ||
-      !stageRef.current
-    ) {
-      return;
-    }
-
-    const rect =
-      stageRef.current.getBoundingClientRect();
-
-    const x =
-      (event.clientX - rect.left) / zoom;
-
-    const y =
-      (event.clientY - rect.top) / zoom;
-
-    const snappedX = snapToGrid(
-      x,
-      GRID_SIZE
-    );
-
-    const snappedY = snapToGrid(
-      y,
-      GRID_SIZE
-    );
-
-    const position = keepInsideRoom(
-      snappedX,
-      snappedY
-    );
-
-    updateFurniture(
-      draggingId,
-      {
-        x: position.x,
-        y: position.y,
-      }
-    );
-  };
-
-  // --------------------------------
-  // Stop dragging
-  // --------------------------------
-
-  const handlePointerUp = (
-    event: ReactPointerEvent<HTMLDivElement>
-  ) => {
-    setDraggingId(null);
-
-    try {
-      event.currentTarget.releasePointerCapture(
-        event.pointerId
-      );
-    } catch {
-      // Pointer capture may already be released.
-    }
-  };
-
-  // --------------------------------
-  // Rotation
-  // --------------------------------
-
-  const updateRotation = (value: number) => {
-    if (selectedId === null) return;
-
-    updateFurniture(
-      selectedId,
-      {
-        rotation: value,
-      }
-    );
-  };
-
-  // --------------------------------
-  // Scale
-  // --------------------------------
-
-  const updateScale = (value: number) => {
-    if (selectedId === null) return;
-
-    updateFurniture(
-      selectedId,
-      {
-        scale: value,
-      }
-    );
-  };
-
-  // --------------------------------
-  // Delete selected furniture
-  // --------------------------------
-
-  const deleteSelectedFurniture = () => {
-    if (selectedId === null) return;
-
-    setProject((currentProject) => ({
-      ...currentProject,
-      furniture:
-        currentProject.furniture.filter(
-          (item) => item.id !== selectedId
-        ),
-    }));
-
-    setSelectedId(null);
+    // Moveable target will be assigned
+    // when the furniture element is rendered.
     setTarget(null);
   };
 
-  // --------------------------------
-  // Selected furniture
-  // --------------------------------
-
-  const selectedFurniture =
-    project.furniture.find(
-      (item) => item.id === selectedId
-    );
+  // ---------------------------------------------
+  // RENDER
+  // ---------------------------------------------
 
   return (
     <div
       style={{
         display: "flex",
         minHeight: "100vh",
+        width: "100%",
         background: "#f5f5f5",
       }}
     >
-      {/* ================================= */}
-      {/* LEFT - Furniture Library */}
-      {/* ================================= */}
+      {/* ========================================= */}
+      {/* LEFT - FURNITURE LIBRARY */}
+      {/* ========================================= */}
 
       <FurnitureLibrary
         onAddFurniture={handleAddFurniture}
       />
 
-      {/* ================================= */}
-      {/* CENTER - 2D Editor */}
-      {/* ================================= */}
+      {/* ========================================= */}
+      {/* CENTER - 2D EDITOR */}
+      {/* ========================================= */}
 
       <div
         style={{
@@ -298,10 +198,13 @@ function Editor() {
             marginTop: 0,
           }}
         >
-          Drag furniture to position it in your room.
+          Drag, resize, and rotate furniture
+          inside your room.
         </p>
 
-        {/* Editor controls */}
+        {/* ========================================= */}
+        {/* EDITOR CONTROLS */}
+        {/* ========================================= */}
 
         <div
           style={{
@@ -313,6 +216,7 @@ function Editor() {
           }}
         >
           <button
+            type="button"
             onClick={() =>
               setZoom((value) =>
                 Math.max(0.5, value - 0.1)
@@ -327,6 +231,7 @@ function Editor() {
           </span>
 
           <button
+            type="button"
             onClick={() =>
               setZoom((value) =>
                 Math.min(2, value + 0.1)
@@ -337,12 +242,14 @@ function Editor() {
           </button>
 
           <button
+            type="button"
             onClick={() => setZoom(1)}
           >
             Reset Zoom
           </button>
 
           <button
+            type="button"
             onClick={() =>
               setShowGrid((value) => !value)
             }
@@ -353,7 +260,9 @@ function Editor() {
           </button>
         </div>
 
-        {/* Room dimensions */}
+        {/* ========================================= */}
+        {/* ROOM DIMENSIONS */}
+        {/* ========================================= */}
 
         <div
           style={{
@@ -365,22 +274,21 @@ function Editor() {
           Room: {ROOM_WIDTH} × {ROOM_HEIGHT}
         </div>
 
-        {/* ================================= */}
+        {/* ========================================= */}
         {/* ROOM */}
-        {/* ================================= */}
+        {/* ========================================= */}
 
         <div
           ref={stageRef}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerUp}
           onClick={() => {
             setSelectedId(null);
             setTarget(null);
           }}
           onDragOver={(event) => {
             event.preventDefault();
-            event.dataTransfer.dropEffect = "copy";
+
+            event.dataTransfer.dropEffect =
+              "copy";
           }}
           onDrop={(event) => {
             event.preventDefault();
@@ -405,15 +313,11 @@ function Editor() {
             backgroundColor: "#f8f8f8",
             transform: `scale(${zoom})`,
             transformOrigin: "top left",
-            cursor:
-              draggingId !== null
-                ? "grabbing"
-                : "default",
           }}
         >
-          {/* ================================= */}
+          {/* ========================================= */}
           {/* GRID */}
-          {/* ================================= */}
+          {/* ========================================= */}
 
           {showGrid && (
             <div
@@ -421,6 +325,7 @@ function Editor() {
                 position: "absolute",
                 inset: 0,
                 pointerEvents: "none",
+
                 backgroundImage: `
                   linear-gradient(
                     rgba(0,0,0,0.12) 1px,
@@ -432,14 +337,15 @@ function Editor() {
                     transparent 1px
                   )
                 `,
+
                 backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
               }}
             />
           )}
 
-          {/* ================================= */}
+          {/* ========================================= */}
           {/* FURNITURE */}
-          {/* ================================= */}
+          {/* ========================================= */}
 
           {project.furniture.map((item) => (
             <div
@@ -449,17 +355,16 @@ function Editor() {
                 event.stopPropagation();
 
                 setSelectedId(item.id);
-                setTarget(event.currentTarget);
+
+                setTarget(
+                  event.currentTarget
+                );
               }}
-              onPointerDown={(event) =>
-                handlePointerDown(
-                  event,
-                  item.id
-                )
-              }
               style={{
                 position: "absolute",
+
                 left: item.x,
+
                 top: item.y,
 
                 transform: `
@@ -468,24 +373,21 @@ function Editor() {
                   scale(${item.scale ?? 1})
                 `,
 
-                cursor:
-                  draggingId === item.id
-                    ? "grabbing"
-                    : "grab",
+                padding: "20px",
+
+                borderRadius: "8px",
 
                 border:
                   selectedId === item.id
                     ? "2px solid #333"
-                    : "none",
-
-                padding: "20px",
-
-                borderRadius: "8px",
+                    : "2px solid transparent",
 
                 background:
                   selectedId === item.id
                     ? "#eef4ff"
                     : "transparent",
+
+                cursor: "move",
 
                 userSelect: "none",
 
@@ -493,72 +395,18 @@ function Editor() {
                   selectedId === item.id
                     ? 10
                     : 1,
+
+                whiteSpace: "nowrap",
               }}
             >
               {getFurnitureEmoji(item.name)}{" "}
               {item.name}
-
-              {/* Rotation handle */}
-
-              {selectedId === item.id && (
-                <div
-                  onPointerDown={(event) =>
-                    event.stopPropagation()
-                  }
-                  style={{
-                    position: "absolute",
-                    top: "-35px",
-                    left: "50%",
-                    transform:
-                      "translateX(-50%)",
-                    fontSize: "20px",
-                    cursor: "pointer",
-                  }}
-                >
-                  ↻
-                </div>
-              )}
-
-              {/* Resize handles */}
-
-              {selectedId === item.id && (
-                <>
-                  <div
-                    className="resize-handle top-left"
-                    onPointerDown={(event) =>
-                      event.stopPropagation()
-                    }
-                  />
-
-                  <div
-                    className="resize-handle top-right"
-                    onPointerDown={(event) =>
-                      event.stopPropagation()
-                    }
-                  />
-
-                  <div
-                    className="resize-handle bottom-left"
-                    onPointerDown={(event) =>
-                      event.stopPropagation()
-                    }
-                  />
-
-                  <div
-                    className="resize-handle bottom-right"
-                    onPointerDown={(event) =>
-                      event.stopPropagation()
-                    }
-                  />
-                </>
-              )}
             </div>
           ))}
 
-          {/* ================================= */}
-          {/* MOVEABLE */}
-          {/* IMPORTANT: OUTSIDE furniture.map */}
-          {/* ================================= */}
+          {/* ========================================= */}
+          {/* MOVEABLE CONTROLS */}
+          {/* ========================================= */}
 
           {target && selectedId !== null && (
             <Moveable
@@ -567,6 +415,10 @@ function Editor() {
               resizable={true}
               rotatable={true}
               origin={false}
+
+              // -----------------------------------
+              // DRAG
+              // -----------------------------------
 
               onDrag={({
                 target,
@@ -612,6 +464,10 @@ function Editor() {
                 );
               }}
 
+              // -----------------------------------
+              // RESIZE
+              // -----------------------------------
+
               onResize={({
                 target,
                 width,
@@ -623,6 +479,30 @@ function Editor() {
                 target.style.height =
                   `${height}px`;
               }}
+
+              onResizeEnd={({ lastEvent }) => {
+                if (
+                  !lastEvent ||
+                  selectedId === null
+                ) {
+                  return;
+                }
+
+                updateFurniture(
+                  selectedId,
+                  {
+                    width:
+                      lastEvent.width,
+
+                    height:
+                      lastEvent.height,
+                  }
+                );
+              }}
+
+              // -----------------------------------
+              // ROTATE
+              // -----------------------------------
 
               onRotate={({
                 target,
@@ -655,170 +535,19 @@ function Editor() {
         </div>
       </div>
 
-      {/* ================================= */}
-      {/* RIGHT - Properties */}
-      {/* ================================= */}
+      {/* ========================================= */}
+      {/* RIGHT - FURNITURE PROPERTIES */}
+      {/* ========================================= */}
 
-      <div
-        style={{
-          width: "260px",
-          padding: "24px",
-          background: "white",
-          borderLeft: "1px solid #ddd",
-        }}
-      >
-        <h2>
-          Furniture Properties
-        </h2>
-
-        {!selectedFurniture && (
-          <p
-            style={{
-              color: "#666",
-            }}
-          >
-            Select a furniture item
-            to edit its properties.
-          </p>
-        )}
-
-        {selectedFurniture && (
-          <>
-            <h3>
-              {getFurnitureEmoji(
-                selectedFurniture.name
-              )}{" "}
-              {selectedFurniture.name}
-            </h3>
-
-            {/* X Position */}
-
-            <label>
-              X Position
-            </label>
-
-            <input
-              type="number"
-              value={selectedFurniture.x}
-              onChange={(event) =>
-                updateFurniture(
-                  selectedFurniture.id,
-                  {
-                    x: Number(
-                      event.target.value
-                    ),
-                  }
-                )
-              }
-              style={{
-                width: "100%",
-                marginBottom: "12px",
-              }}
-            />
-
-            {/* Y Position */}
-
-            <label>
-              Y Position
-            </label>
-
-            <input
-              type="number"
-              value={selectedFurniture.y}
-              onChange={(event) =>
-                updateFurniture(
-                  selectedFurniture.id,
-                  {
-                    y: Number(
-                      event.target.value
-                    ),
-                  }
-                )
-              }
-              style={{
-                width: "100%",
-                marginBottom: "12px",
-              }}
-            />
-
-            {/* Rotation */}
-
-            <label>
-              Rotation:{" "}
-              {selectedFurniture.rotation ?? 0}°
-            </label>
-
-            <input
-              type="range"
-              min="0"
-              max="360"
-              value={
-                selectedFurniture.rotation ?? 0
-              }
-              onChange={(event) =>
-                updateRotation(
-                  Number(
-                    event.target.value
-                  )
-                )
-              }
-              style={{
-                width: "100%",
-                marginBottom: "12px",
-              }}
-            />
-
-            {/* Scale */}
-
-            <label>
-              Scale:{" "}
-              {(
-                selectedFurniture.scale ?? 1
-              ).toFixed(1)}
-            </label>
-
-            <input
-              type="range"
-              min={MIN_SCALE}
-              max={MAX_SCALE}
-              step={SCALE_STEP}
-              value={
-                selectedFurniture.scale ?? 1
-              }
-              onChange={(event) =>
-                updateScale(
-                  Number(
-                    event.target.value
-                  )
-                )
-              }
-              style={{
-                width: "100%",
-                marginBottom: "20px",
-              }}
-            />
-
-            {/* Delete */}
-
-            <button
-              onClick={
-                deleteSelectedFurniture
-              }
-              style={{
-                width: "100%",
-                padding: "10px",
-                background: "#e53935",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-              }}
-            >
-              Delete Furniture
-            </button>
-          </>
-        )}
-      </div>
+      {selectedId !== null && (
+        <FurnitureProperties
+          selectedId={selectedId}
+          onClose={() => {
+            setSelectedId(null);
+            setTarget(null);
+          }}
+        />
+      )}
     </div>
   );
 }
