@@ -4,9 +4,11 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
+import Moveable from "react-moveable";
 import { useProject } from "../context/ProjectContext";
 import FurnitureLibrary from "../components/FurnitureLibrary";
 import { furnitureLibrary } from "../data/furnitureData";
+
 import {
   ROOM_WIDTH,
   ROOM_HEIGHT,
@@ -15,8 +17,8 @@ import {
   MAX_SCALE,
   SCALE_STEP,
 } from "../constants/editor";
-import { snapToGrid } from "../utils/editorUtils";
 
+import { snapToGrid } from "../utils/editorUtils";
 import "./Editor.css";
 
 function getFurnitureEmoji(name: string) {
@@ -46,8 +48,13 @@ function Editor() {
   const [selectedId, setSelectedId] =
     useState<string | number | null>(null);
 
+  const [target, setTarget] =
+    useState<HTMLElement | null>(null);
+
   const [zoom, setZoom] = useState(1);
+
   const [showGrid, setShowGrid] = useState(true);
+
   const [draggingId, setDraggingId] =
     useState<string | number | null>(null);
 
@@ -237,6 +244,7 @@ function Editor() {
     }));
 
     setSelectedId(null);
+    setTarget(null);
   };
 
   // --------------------------------
@@ -329,9 +337,7 @@ function Editor() {
           </button>
 
           <button
-            onClick={() =>
-              setZoom(1)
-            }
+            onClick={() => setZoom(1)}
           >
             Reset Zoom
           </button>
@@ -368,7 +374,10 @@ function Editor() {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp}
-          onClick={() => setSelectedId(null)}
+          onClick={() => {
+            setSelectedId(null);
+            setTarget(null);
+          }}
           onDragOver={(event) => {
             event.preventDefault();
             event.dataTransfer.dropEffect = "copy";
@@ -435,9 +444,12 @@ function Editor() {
           {project.furniture.map((item) => (
             <div
               key={item.id}
+              data-furniture-id={item.id}
               onClick={(event) => {
                 event.stopPropagation();
+
                 setSelectedId(item.id);
+                setTarget(event.currentTarget);
               }}
               onPointerDown={(event) =>
                 handlePointerDown(
@@ -456,17 +468,17 @@ function Editor() {
                   scale(${item.scale ?? 1})
                 `,
 
+                cursor:
+                  draggingId === item.id
+                    ? "grabbing"
+                    : "grab",
+
                 border:
                   selectedId === item.id
                     ? "2px solid #333"
                     : "none",
 
                 padding: "20px",
-
-                cursor:
-                  draggingId === item.id
-                    ? "grabbing"
-                    : "grab",
 
                 borderRadius: "8px",
 
@@ -476,6 +488,7 @@ function Editor() {
                     : "transparent",
 
                 userSelect: "none",
+
                 zIndex:
                   selectedId === item.id
                     ? 10
@@ -541,6 +554,104 @@ function Editor() {
               )}
             </div>
           ))}
+
+          {/* ================================= */}
+          {/* MOVEABLE */}
+          {/* IMPORTANT: OUTSIDE furniture.map */}
+          {/* ================================= */}
+
+          {target && selectedId !== null && (
+            <Moveable
+              target={target}
+              draggable={true}
+              resizable={true}
+              rotatable={true}
+              origin={false}
+
+              onDrag={({
+                target,
+                left,
+                top,
+              }) => {
+                target.style.left =
+                  `${left}px`;
+
+                target.style.top =
+                  `${top}px`;
+              }}
+
+              onDragEnd={({ lastEvent }) => {
+                if (
+                  !lastEvent ||
+                  selectedId === null
+                ) {
+                  return;
+                }
+
+                const snappedX =
+                  snapToGrid(
+                    lastEvent.left,
+                    GRID_SIZE
+                  );
+
+                const snappedY =
+                  snapToGrid(
+                    lastEvent.top,
+                    GRID_SIZE
+                  );
+
+                const position =
+                  keepInsideRoom(
+                    snappedX,
+                    snappedY
+                  );
+
+                updateFurniture(
+                  selectedId,
+                  position
+                );
+              }}
+
+              onResize={({
+                target,
+                width,
+                height,
+              }) => {
+                target.style.width =
+                  `${width}px`;
+
+                target.style.height =
+                  `${height}px`;
+              }}
+
+              onRotate={({
+                target,
+                transform,
+              }) => {
+                target.style.transform =
+                  transform;
+              }}
+
+              onRotateEnd={({
+                lastEvent,
+              }) => {
+                if (
+                  !lastEvent ||
+                  selectedId === null
+                ) {
+                  return;
+                }
+
+                updateFurniture(
+                  selectedId,
+                  {
+                    rotation:
+                      lastEvent.rotation,
+                  }
+                );
+              }}
+            />
+          )}
         </div>
       </div>
 
