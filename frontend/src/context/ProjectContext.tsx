@@ -2,72 +2,132 @@ import {
   createContext,
   useContext,
   useState,
-  type ReactNode,
 } from "react";
 
-import type { Project } from "../types/project";
+import type { ReactNode } from "react";
+
+import type {
+  Project,
+} from "../types/Project";
 
 interface ProjectContextType {
   project: Project;
-  setProject: React.Dispatch<React.SetStateAction<Project>>;
+
+  setProject: React.Dispatch<
+    React.SetStateAction<Project>
+  >;
+
+  undo: () => void;
+  redo: () => void;
+
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
-const ProjectContext = createContext<ProjectContextType | undefined>(
-  undefined
-);
-
-const defaultProject: Project = {
-  roomImage: "",
-  style: "",
-  furniture: [],
-};
+const ProjectContext =
+  createContext<ProjectContextType | undefined>(
+    undefined
+  );
 
 export function ProjectProvider({
   children,
 }: {
   children: ReactNode;
 }) {
-  const [project, setProjectState] = useState<Project>(() => {
-    const savedProject = localStorage.getItem("interior-ai-project");
+  const [project, setProjectState] =
+    useState<Project>({
+      roomImage: "",
+      style: "",
+      furniture: [],
+    });
 
-    if (savedProject) {
-      try {
-        return JSON.parse(savedProject);
-      } catch {
-        return defaultProject;
-      }
-    }
-
-    return defaultProject;
-  });
+  const [past, setPast] = useState<Project[]>([]);
+  const [future, setFuture] = useState<Project[]>([]);
 
   const setProject: React.Dispatch<
     React.SetStateAction<Project>
-  > = (value) => {
+  > = (action) => {
     setProjectState((currentProject) => {
-      const updatedProject =
-        typeof value === "function"
-          ? value(currentProject)
-          : value;
+      const nextProject =
+        typeof action === "function"
+          ? action(currentProject)
+          : action;
 
-      localStorage.setItem(
-        "interior-ai-project",
-        JSON.stringify(updatedProject)
+      setPast((currentPast) => [
+        ...currentPast,
+        currentProject,
+      ]);
+
+      setFuture([]);
+
+      return nextProject;
+    });
+  };
+
+  const undo = () => {
+    setPast((currentPast) => {
+      if (currentPast.length === 0) {
+        return currentPast;
+      }
+
+      const previousProject =
+        currentPast[currentPast.length - 1];
+
+      setFuture((currentFuture) => [
+        project,
+        ...currentFuture,
+      ]);
+
+      setProjectState(previousProject);
+
+      return currentPast.slice(
+        0,
+        currentPast.length - 1
       );
+    });
+  };
 
-      return updatedProject;
+  const redo = () => {
+    setFuture((currentFuture) => {
+      if (currentFuture.length === 0) {
+        return currentFuture;
+      }
+
+      const nextProject =
+        currentFuture[0];
+
+      setPast((currentPast) => [
+        ...currentPast,
+        project,
+      ]);
+
+      setProjectState(nextProject);
+
+      return currentFuture.slice(1);
     });
   };
 
   return (
-    <ProjectContext.Provider value={{ project, setProject }}>
+    <ProjectContext.Provider
+      value={{
+        project,
+        setProject,
+
+        undo,
+        redo,
+
+        canUndo: past.length > 0,
+        canRedo: future.length > 0,
+      }}
+    >
       {children}
     </ProjectContext.Provider>
   );
 }
 
 export function useProject() {
-  const context = useContext(ProjectContext);
+  const context =
+    useContext(ProjectContext);
 
   if (!context) {
     throw new Error(

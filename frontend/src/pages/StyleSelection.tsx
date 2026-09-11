@@ -1,5 +1,8 @@
+
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useProject } from "../context/ProjectContext";
+
 const styles = [
   "Modern",
   "Minimalist",
@@ -11,7 +14,24 @@ const styles = [
 
 function StyleSelection() {
   const { setProject } = useProject();
+  const navigate = useNavigate();
+
   const [selectedStyle, setSelectedStyle] = useState("");
+
+  const handleContinue = () => {
+    if (!selectedStyle) {
+      return;
+    }
+
+    // Save the selected style in ProjectContext
+    setProject((prev) => ({
+      ...prev,
+      style: selectedStyle,
+    }));
+
+    // Navigate to the furniture window
+    navigate("/furniture");
+  };
 
   return (
     <div
@@ -22,9 +42,7 @@ function StyleSelection() {
     >
       <h1>Choose Your Interior Style</h1>
 
-      <p>
-        Select a style for your room design.
-      </p>
+      <p>Select a style for your room design.</p>
 
       <div
         style={{
@@ -38,6 +56,7 @@ function StyleSelection() {
         {styles.map((style) => (
           <button
             key={style}
+            type="button"
             onClick={() => {
               setSelectedStyle(style);
 
@@ -45,8 +64,7 @@ function StyleSelection() {
                 ...prev,
                 style: style,
               }));
-          }}
-
+            }}
             style={{
               padding: "20px 30px",
               borderRadius: "10px",
@@ -70,13 +88,19 @@ function StyleSelection() {
       {selectedStyle && (
         <div style={{ marginTop: "30px" }}>
           <h2>Selected Style</h2>
+
           <p>{selectedStyle}</p>
 
           <button
+            type="button"
+            onClick={handleContinue}
             style={{
               padding: "12px 25px",
               marginTop: "10px",
               cursor: "pointer",
+              borderRadius: "8px",
+              border: "none",
+              fontSize: "16px",
             }}
           >
             Continue

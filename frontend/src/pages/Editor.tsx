@@ -1,6 +1,5 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Moveable from "react-moveable";
-
 import { useProject } from "../context/ProjectContext";
 import FurnitureLibrary from "../components/FurnitureLibrary";
 import FurnitureProperties from "../components/FurnitureProperties";
@@ -53,7 +52,14 @@ function keepInsideRoom(x: number, y: number) {
 // ---------------------------------------------
 
 function Editor() {
-  const { project, setProject } = useProject();
+  const {
+  project,
+  setProject,
+  undo,
+  redo,
+  canUndo,
+  canRedo,
+} = useProject();
 
   // Selected furniture ID
   const [selectedId, setSelectedId] =
@@ -62,7 +68,181 @@ function Editor() {
   // DOM element controlled by Moveable
   const [target, setTarget] =
     useState<HTMLElement | null>(null);
+useEffect(() => {
+  const handleKeyDown = (
+    event: KeyboardEvent
+  ) => {
+    // Do not use shortcuts while typing
+    const target =
+      event.target as HTMLElement;
 
+    if (
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA"
+    ) {
+      return;
+    }
+
+    // Undo
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      event.key.toLowerCase() === "z"
+    ) {
+      event.preventDefault();
+
+      if (event.shiftKey) {
+        redo();
+      } else {
+        undo();
+      }
+
+      return;
+    }
+
+    // Redo
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      event.key.toLowerCase() === "y"
+    ) {
+      event.preventDefault();
+
+      redo();
+
+      return;
+    }
+
+    // Duplicate
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      event.key.toLowerCase() === "d"
+    ) {
+      event.preventDefault();
+
+      if (selectedId === null) {
+        return;
+      }
+
+      const selectedFurniture =
+        project.furniture.find(
+          (item) =>
+            item.id === selectedId
+        );
+
+      if (!selectedFurniture) {
+        return;
+      }
+
+      setProject((currentProject) => ({
+        ...currentProject,
+
+        furniture: [
+          ...currentProject.furniture,
+
+          {
+            ...selectedFurniture,
+            id: Date.now(),
+            x: selectedFurniture.x + 40,
+            y: selectedFurniture.y + 40,
+          },
+        ],
+      }));
+
+      return;
+    }
+
+    // Delete
+    if (
+      event.key === "Delete" ||
+      event.key === "Backspace"
+    ) {
+      if (selectedId === null) {
+        return;
+      }
+
+      event.preventDefault();
+
+      setProject((currentProject) => ({
+        ...currentProject,
+
+        furniture:
+          currentProject.furniture.filter(
+            (item) =>
+              item.id !== selectedId
+          ),
+      }));
+
+      setSelectedId(null);
+      setTarget(null);
+
+      return;
+    }
+
+    // Arrow movement
+    if (selectedId === null) {
+      return;
+    }
+
+    let dx = 0;
+    let dy = 0;
+
+    switch (event.key) {
+      case "ArrowLeft":
+        dx = -10;
+        break;
+
+      case "ArrowRight":
+        dx = 10;
+        break;
+
+      case "ArrowUp":
+        dy = -10;
+        break;
+
+      case "ArrowDown":
+        dy = 10;
+        break;
+
+      default:
+        return;
+    }
+
+    event.preventDefault();
+
+    setProject((currentProject) => ({
+      ...currentProject,
+
+      furniture:
+        currentProject.furniture.map(
+          (item) =>
+            item.id === selectedId
+              ? {
+                  ...item,
+                  x: item.x + dx,
+                  y: item.y + dy,
+                }
+              : item
+        ),
+    }));
+  };
+
+  window.addEventListener(
+    "keydown",
+    handleKeyDown
+  );
+
+  return () => {
+    window.removeEventListener(
+      "keydown",
+      handleKeyDown
+    );
+  };
+}, [
+  project,
+  selectedId,
+  setProject,
+  undo,
+  redo,
+]);
   // Zoom
   const [zoom, setZoom] = useState(1);
 
@@ -156,6 +336,7 @@ function Editor() {
   // ---------------------------------------------
 
   return (
+    
     <div
       style={{
         display: "flex",
@@ -164,6 +345,41 @@ function Editor() {
         background: "#f5f5f5",
       }}
     >
+      <div
+  style={{
+    display: "flex",
+    gap: "8px",
+    padding: "10px",
+    borderBottom: "1px solid #ddd",
+    background: "#fff",
+  }}
+>
+  <button
+    onClick={undo}
+    disabled={!canUndo}
+    style={{
+      padding: "8px 14px",
+      cursor: canUndo
+        ? "pointer"
+        : "not-allowed",
+    }}
+  >
+    ↩️ Undo
+  </button>
+
+  <button
+    onClick={redo}
+    disabled={!canRedo}
+    style={{
+      padding: "8px 14px",
+      cursor: canRedo
+        ? "pointer"
+        : "not-allowed",
+    }}
+  >
+    ↪️ Redo
+  </button>
+</div>
       {/* ========================================= */}
       {/* LEFT - FURNITURE LIBRARY */}
       {/* ========================================= */}

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Canvas } from "@react-three/fiber";
 
 import {
@@ -11,7 +11,7 @@ import {
 
 import { useProject } from "../context/ProjectContext";
 
-import type { Project } from "../types/project";
+import type { Project } from "../types/Project";
 
 const ROOM_WIDTH = 12;
 const ROOM_DEPTH = 8;
@@ -48,7 +48,10 @@ function Floor() {
       position={[0, 0, 0]}
       receiveShadow
     >
-      <planeGeometry args={[ROOM_WIDTH, ROOM_DEPTH]} />
+      <planeGeometry
+        args={[ROOM_WIDTH, ROOM_DEPTH]}
+      />
+
       <RoomMaterial color="#d8d2c8" />
     </mesh>
   );
@@ -181,7 +184,10 @@ function getFurnitureModel(name: string) {
             castShadow
             receiveShadow
           >
-            <boxGeometry args={[2.8, 0.45, 1]} />
+            <boxGeometry
+              args={[2.8, 0.45, 1]}
+            />
+
             <meshStandardMaterial color="#8b5a2b" />
           </mesh>
 
@@ -191,7 +197,10 @@ function getFurnitureModel(name: string) {
             castShadow
             receiveShadow
           >
-            <boxGeometry args={[2.8, 1, 0.3]} />
+            <boxGeometry
+              args={[2.8, 1, 0.3]}
+            />
+
             <meshStandardMaterial color="#8b5a2b" />
           </mesh>
 
@@ -200,7 +209,10 @@ function getFurnitureModel(name: string) {
             position={[-1.25, 0.8, 0]}
             castShadow
           >
-            <boxGeometry args={[0.3, 0.7, 1]} />
+            <boxGeometry
+              args={[0.3, 0.7, 1]}
+            />
+
             <meshStandardMaterial color="#70451f" />
           </mesh>
 
@@ -209,7 +221,10 @@ function getFurnitureModel(name: string) {
             position={[1.25, 0.8, 0]}
             castShadow
           >
-            <boxGeometry args={[0.3, 0.7, 1]} />
+            <boxGeometry
+              args={[0.3, 0.7, 1]}
+            />
+
             <meshStandardMaterial color="#70451f" />
           </mesh>
         </group>
@@ -224,7 +239,10 @@ function getFurnitureModel(name: string) {
             castShadow
             receiveShadow
           >
-            <boxGeometry args={[2, 0.2, 1]} />
+            <boxGeometry
+              args={[2, 0.2, 1]}
+            />
+
             <meshStandardMaterial color="#8b5a2b" />
           </mesh>
 
@@ -264,7 +282,10 @@ function getFurnitureModel(name: string) {
             position={[0, 0.65, 0]}
             castShadow
           >
-            <boxGeometry args={[1, 0.25, 1]} />
+            <boxGeometry
+              args={[1, 0.25, 1]}
+            />
+
             <meshStandardMaterial color="#555555" />
           </mesh>
 
@@ -273,7 +294,10 @@ function getFurnitureModel(name: string) {
             position={[0, 1.3, -0.4]}
             castShadow
           >
-            <boxGeometry args={[1, 1.3, 0.2]} />
+            <boxGeometry
+              args={[1, 1.3, 0.2]}
+            />
+
             <meshStandardMaterial color="#555555" />
           </mesh>
 
@@ -314,7 +338,10 @@ function getFurnitureModel(name: string) {
             castShadow
             receiveShadow
           >
-            <boxGeometry args={[3, 0.5, 2]} />
+            <boxGeometry
+              args={[3, 0.5, 2]}
+            />
+
             <meshStandardMaterial color="#eeeeee" />
           </mesh>
 
@@ -323,7 +350,10 @@ function getFurnitureModel(name: string) {
             position={[0, 0.35, 0]}
             castShadow
           >
-            <boxGeometry args={[3.2, 0.3, 2.2]} />
+            <boxGeometry
+              args={[3.2, 0.3, 2.2]}
+            />
+
             <meshStandardMaterial color="#8b6f47" />
           </mesh>
 
@@ -332,7 +362,10 @@ function getFurnitureModel(name: string) {
             position={[0, 1.5, -0.9]}
             castShadow
           >
-            <boxGeometry args={[3.2, 2, 0.2]} />
+            <boxGeometry
+              args={[3.2, 2, 0.2]}
+            />
+
             <meshStandardMaterial color="#8b6f47" />
           </mesh>
         </group>
@@ -347,13 +380,21 @@ function getFurnitureModel(name: string) {
             castShadow
             receiveShadow
           >
-            <boxGeometry args={[2, 3, 0.7]} />
+            <boxGeometry
+              args={[2, 3, 0.7]}
+            />
+
             <meshStandardMaterial color="#8b6f47" />
           </mesh>
 
           {/* Door divider */}
-          <mesh position={[0, 1.5, -0.36]}>
-            <boxGeometry args={[0.05, 2.8, 0.03]} />
+          <mesh
+            position={[0, 1.5, -0.36]}
+          >
+            <boxGeometry
+              args={[0.05, 2.8, 0.03]}
+            />
+
             <meshStandardMaterial color="#5c4630" />
           </mesh>
         </group>
@@ -423,7 +464,9 @@ function getFurnitureModel(name: string) {
           position={[0, 0.5, 0]}
           castShadow
         >
-          <boxGeometry args={[1, 1, 1]} />
+          <boxGeometry
+            args={[1, 1, 1]}
+          />
 
           <meshStandardMaterial color="#999999" />
         </mesh>
@@ -436,7 +479,7 @@ function getFurnitureModel(name: string) {
 --------------------------------- */
 
 interface Furniture3DProps {
-  id: string |number;
+  id: string | number;
   name: string;
   x: number;
   y: number;
@@ -468,91 +511,100 @@ function Furniture3D({
   onChange,
   transformMode,
 }: Furniture3DProps) {
-  const groupRef = useRef<THREE.Group>(null);
+  const [group, setGroup] =
+    useState<THREE.Group | null>(null);
 
   /*
-    Convert 2D coordinates into 3D coordinates.
+    Convert 2D editor coordinates
+    into 3D room coordinates.
   */
 
-  const positionX = (x - 400) / 70;
-  const positionZ = (y - 250) / 70;
+  const positionX =
+    (x - 400) / 70;
 
-  const rotationY = (rotation * Math.PI) / 180;
+  const positionZ =
+    (y - 250) / 70;
+
+  const rotationY =
+    (rotation * Math.PI) / 180;
+
+  const furnitureModel =
+    getFurnitureModel(name);
 
   /*
-    IMPORTANT:
-    We do NOT load model3D here.
-
-    The .glb file is currently empty, so using
-    useGLTF() causes the /3d page to crash.
-
-    Instead, we use our built-in 3D furniture.
+    Save the furniture transform
+    after the user finishes dragging.
   */
 
-  const furnitureModel = getFurnitureModel(name);
+  const saveTransform = () => {
+    if (!group) {
+      return;
+    }
+
+    const currentX =
+      group.position.x;
+
+    const currentZ =
+      group.position.z;
+
+    const currentRotation =
+      group.rotation.y;
+
+    const newX =
+      currentX * 70 + 400;
+
+    const newY =
+      currentZ * 70 + 250;
+
+    const newRotation =
+      (currentRotation * 180) /
+      Math.PI;
+
+    onChange(
+      newX,
+      newY,
+      newRotation
+    );
+  };
 
   return (
-    <group
-      ref={groupRef}
-      position={[
-        positionX,
-        0,
-        positionZ,
-      ]}
-      rotation={[
-        0,
-        rotationY,
-        0,
-      ]}
-      scale={scale}
-      onClick={(event) => {
-        event.stopPropagation();
-        onSelect();
-      }}
-    >
-      {selected ? (
+    <>
+      {/* Furniture */}
+      <group
+        ref={(node) => {
+          setGroup(node);
+        }}
+        position={[
+          positionX,
+          0,
+          positionZ,
+        ]}
+        rotation={[
+          0,
+          rotationY,
+          0,
+        ]}
+        scale={scale}
+        onClick={(event) => {
+          event.stopPropagation();
+          onSelect();
+        }}
+      >
+        {furnitureModel}
+      </group>
+
+      {/* Transform controls */}
+      {selected && group && (
         <TransformControls
+          object={group}
           mode={transformMode}
-          showX
+          showX={true}
           showY={false}
-          showZ
-          onObjectChange={() => {
-            if (!groupRef.current) {
-              return;
-            }
-
-            const currentX =
-              groupRef.current.position.x;
-
-            const currentZ =
-              groupRef.current.position.z;
-
-            const currentRotation =
-              groupRef.current.rotation.y;
-
-            const newX =
-              currentX * 70 + 400;
-
-            const newY =
-              currentZ * 70 + 250;
-
-            const newRotation =
-              (currentRotation * 180) /
-              Math.PI;
-
-            onChange(
-              newX,
-              newY,
-              newRotation
-            );
-          }}
-        >
-          {furnitureModel}
-        </TransformControls>
-      ) : (
-        furnitureModel
+          showZ={true}
+          onMouseUp={saveTransform}
+        />
       )}
-    </group>
+    </>
   );
 }
 
@@ -573,7 +625,9 @@ interface SceneProps {
     id: string | number | null
   ) => void;
 
-  transformMode: "translate" | "rotate";
+  transformMode:
+    | "translate"
+    | "rotate";
 }
 
 function Scene({
@@ -585,7 +639,9 @@ function Scene({
 }: SceneProps) {
   return (
     <>
-      {/* Lighting */}
+      {/* --------------------------------
+          LIGHTING
+      --------------------------------- */}
 
       <ambientLight intensity={0.5} />
 
@@ -605,7 +661,9 @@ function Scene({
         distance={10}
       />
 
-      {/* Room */}
+      {/* --------------------------------
+          ROOM
+      --------------------------------- */}
 
       <Floor />
 
@@ -615,7 +673,9 @@ function Scene({
 
       <RoomBoundary />
 
-      {/* Furniture */}
+      {/* --------------------------------
+          FURNITURE
+      --------------------------------- */}
 
       {project.furniture.map((item) => (
         <Furniture3D
@@ -663,7 +723,9 @@ function Scene({
         />
       ))}
 
-      {/* Grid */}
+      {/* --------------------------------
+          FLOOR GRID
+      --------------------------------- */}
 
       <Grid
         args={[
@@ -681,6 +743,10 @@ function Scene({
         followCamera={false}
         infiniteGrid={false}
       />
+
+      {/* --------------------------------
+          ENVIRONMENT
+      --------------------------------- */}
 
       <Environment preset="apartment" />
     </>
@@ -700,7 +766,9 @@ function ThreeDView() {
   const [
     selectedId,
     setSelectedId,
-  ] = useState< string |number | null>(null);
+  ] = useState<
+    string | number | null
+  >(null);
 
   const [
     transformMode,
@@ -723,7 +791,9 @@ function ThreeDView() {
         position: "relative",
       }}
     >
-      {/* Header */}
+      {/* --------------------------------
+          HEADER
+      --------------------------------- */}
 
       <div
         style={{
@@ -755,7 +825,9 @@ function ThreeDView() {
         </p>
       </div>
 
-      {/* Selected Furniture Panel */}
+      {/* --------------------------------
+          SELECTED FURNITURE PANEL
+      --------------------------------- */}
 
       {selectedFurniture && (
         <div
@@ -794,6 +866,7 @@ function ThreeDView() {
             )}
           </p>
 
+          {/* Move / Rotate */}
           <div
             style={{
               display: "flex",
@@ -822,6 +895,7 @@ function ThreeDView() {
             </button>
           </div>
 
+          {/* Deselect */}
           <button
             onClick={() =>
               setSelectedId(null)
@@ -832,7 +906,9 @@ function ThreeDView() {
         </div>
       )}
 
-      {/* 3D Canvas */}
+      {/* --------------------------------
+          3D CANVAS
+      --------------------------------- */}
 
       <Canvas
         camera={{
@@ -852,6 +928,10 @@ function ThreeDView() {
           setSelectedId={setSelectedId}
           transformMode={transformMode}
         />
+
+        {/* --------------------------------
+            CAMERA CONTROLS
+        --------------------------------- */}
 
         <OrbitControls
           target={[0, 1, 0]}
