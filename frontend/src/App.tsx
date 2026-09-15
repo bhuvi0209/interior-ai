@@ -8,7 +8,6 @@ import { ProjectProvider } from "./context/ProjectContext";
 import Home from "./pages/Home";
 import UploadRoom from "./pages/UploadRoom";
 import StyleSelection from "./pages/StyleSelection";
-import FurnitureLibrary from "./pages/FurnitureLibrary";
 import RoomEditor from "./pages/RoomEditor";
 import ProjectSummary from "./pages/ProjectSummary";
 import Editor from "./pages/Editor";
@@ -32,7 +31,7 @@ function App() {
 
           <Route
             path="/furniture"
-            element={<FurnitureLibrary />}
+            element={<Editor />}
           />
 
           <Route

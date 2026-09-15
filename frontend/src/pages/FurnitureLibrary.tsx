@@ -1,81 +1,15 @@
-import { useState } from "react";
-import { useProject } from "../context/ProjectContext";
 
-type Furniture = {
-  id: string;
-  name: string;
-  category: string;
-  emoji: string;
+import { useState } from "react";
+import { furnitureLibrary } from "../data/furnitureData";
+
+type FurnitureLibraryProps = {
+  onAddFurniture: (furnitureId: string) => void;
 };
 
-const furnitureItems: Furniture[] = [
-  {
-    id: "1",
-    name: "Sofa",
-    category: "Living Room",
-    emoji: "🛋️",
-  },
-  {
-    id: "2",
-    name: "Coffee Table",
-    category: "Living Room",
-    emoji: "🪑",
-  },
-  {
-    id: "3",
-    name: "TV Unit",
-    category: "Living Room",
-    emoji: "📺",
-  },
-  {
-    id: "4",
-    name: "Chair",
-    category: "Living Room",
-    emoji: "💺",
-  },
-  {
-    id: "5",
-    name: "Bed",
-    category: "Bedroom",
-    emoji: "🛏️",
-  },
-  {
-    id: "6",
-    name: "Wardrobe",
-    category: "Bedroom",
-    emoji: "🚪",
-  },
-  {
-    id: "7",
-    name: "Nightstand",
-    category: "Bedroom",
-    emoji: "🗄️",
-  },
-  {
-    id: "8",
-    name: "Rug",
-    category: "Decor",
-    emoji: "🟫",
-  },
-  {
-    id: "9",
-    name: "Lamp",
-    category: "Decor",
-    emoji: "💡",
-  },
-  {
-    id: "10",
-    name: "Plant",
-    category: "Decor",
-    emoji: "🪴",
-  },
-];
-
-function FurnitureLibrary() {
-  const [selectedFurniture, setSelectedFurniture] =
-    useState<Furniture | null>(null);
-
-  const { project, setProject } = useProject();
+export default function FurnitureLibrary({
+  onAddFurniture,
+}: FurnitureLibraryProps) {
+  const [search, setSearch] = useState("");
 
   const categories = [
     "Living Room",
@@ -83,146 +17,161 @@ function FurnitureLibrary() {
     "Decor",
   ];
 
-  const addFurnitureToProject = (
-  furniture: Furniture
-) => {
-  const newFurniture = {
-    id: Date.now(),
-    name: furniture.name,
-    x:
-      100 +
-      (project.furniture.length % 5) * 120,
-    y:
-      100 +
-      Math.floor(project.furniture.length / 5) * 120,
-  };
-
-  setProject((prev) => ({
-    ...prev,
-    furniture: [
-      ...prev.furniture,
-      newFurniture,
-    ],
-  }));
-
-  setSelectedFurniture(furniture);
-};
-
   return (
     <div
       style={{
-        padding: "40px",
-        fontFamily: "Arial",
+        width: "220px",
+        flexShrink: 0,
+        padding: "15px",
+        background: "#f5f5f5",
+        borderRadius: "12px",
+        border: "1px solid #ddd",
+        boxSizing: "border-box",
+        height: "100%",
+        overflowY: "auto",
       }}
     >
-      <h1>Furniture Library</h1>
+      <h2
+        style={{
+          marginTop: 0,
+          marginBottom: "15px",
+          textAlign: "center",
+        }}
+      >
+        Furniture Library
+      </h2>
 
-      <p>
-        Choose furniture for your interior design.
-      </p>
+      <input
+        type="text"
+        placeholder="Search furniture..."
+        value={search}
+        onChange={(event) =>
+          setSearch(event.target.value)
+        }
+        style={{
+          width: "100%",
+          padding: "10px",
+          marginBottom: "20px",
+          borderRadius: "8px",
+          border: "1px solid #ddd",
+          boxSizing: "border-box",
+          outline: "none",
+        }}
+      />
 
       {categories.map((category) => {
-        const categoryItems =
-          furnitureItems.filter(
-            (item) => item.category === category
-          );
+        const filteredFurniture =
+          furnitureLibrary
+            .filter(
+              (item) =>
+                item.category === category
+            )
+            .filter((item) =>
+              item.name
+                .toLowerCase()
+                .includes(
+                  search.toLowerCase()
+                )
+            );
 
         return (
           <div
             key={category}
-            style={{ marginTop: "40px" }}
+            style={{
+              marginBottom: "20px",
+            }}
           >
-            <h2>{category}</h2>
+            <h3
+              style={{
+                marginBottom: "10px",
+                fontSize: "16px",
+              }}
+            >
+              {category}
+            </h3>
 
             <div
               style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "20px",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "8px",
               }}
             >
-              {categoryItems.map((item) => (
+              {filteredFurniture.map((item) => (
                 <button
                   key={item.id}
+                  type="button"
+                  draggable
                   onClick={() =>
-                    addFurnitureToProject(item)
+                    onAddFurniture(item.id)
                   }
+                  onDragStart={(event) => {
+                    event.dataTransfer.setData(
+                      "furnitureId",
+                      item.id
+                    );
+
+                    event.dataTransfer.effectAllowed =
+                      "copy";
+                  }}
                   style={{
-                    width: "180px",
-                    padding: "25px",
-                    background: "white",
+                    padding: "12px 8px",
                     border: "1px solid #ddd",
-                    borderRadius: "12px",
-                    cursor: "pointer",
-                    fontSize: "16px",
+                    borderRadius: "10px",
+                    background: "white",
+                    cursor: "grab",
+                    textAlign: "center",
                   }}
                 >
                   <div
                     style={{
-                      fontSize: "45px",
-                      marginBottom: "10px",
+                      fontSize: "28px",
+                      marginBottom: "5px",
                     }}
                   >
-                    {item.emoji}
+                    {getFurnitureEmoji(item.name)}
                   </div>
-
-                  <strong>{item.name}</strong>
 
                   <div
                     style={{
-                      marginTop: "10px",
                       fontSize: "13px",
                     }}
                   >
-                    Add to Project
+                    {item.name}
                   </div>
                 </button>
               ))}
             </div>
+
+            {filteredFurniture.length === 0 && (
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "#888",
+                }}
+              >
+                No furniture found.
+              </p>
+            )}
           </div>
         );
       })}
-
-      {selectedFurniture && (
-        <div
-          style={{
-            marginTop: "40px",
-            padding: "20px",
-            border: "1px solid #ddd",
-            borderRadius: "12px",
-          }}
-        >
-          <h2>Added Furniture</h2>
-
-          <p>
-            {selectedFurniture.emoji}{" "}
-            {selectedFurniture.name}
-          </p>
-        </div>
-      )}
-
-      <div
-        style={{
-          marginTop: "40px",
-          padding: "20px",
-          background: "#f5f5f5",
-          borderRadius: "10px",
-        }}
-      >
-        <h2>Project Furniture</h2>
-
-        {project.furniture.length === 0 ? (
-          <p>No furniture added yet.</p>
-        ) : (
-          project.furniture.map((item) => (
-            <p key={item.id}>
-              {item.name} — X: {item.x}, Y: {item.y}
-            </p>
-          ))
-        )}
-      </div>
     </div>
   );
 }
 
-export default FurnitureLibrary;
+function getFurnitureEmoji(name: string) {
+  const lowerName = name.toLowerCase();
+
+  if (lowerName.includes("sofa")) return "🛋️";
+  if (lowerName.includes("chair")) return "🪑";
+  if (lowerName.includes("table")) return "☕";
+  if (lowerName.includes("bed")) return "🛏️";
+  if (lowerName.includes("wardrobe")) return "🚪";
+  if (lowerName.includes("lamp")) return "💡";
+  if (lowerName.includes("plant")) return "🪴";
+  if (lowerName.includes("rug")) return "🟫";
+  if (lowerName.includes("tv")) return "📺";
+
+  return "🪑";
+}

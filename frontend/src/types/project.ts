@@ -18,6 +18,8 @@ export interface FurnitureItem {
   image2D?: string;
 
   model3D?: string;
+  visible: boolean;
+  locked: boolean;
 }
 
 export interface Project {

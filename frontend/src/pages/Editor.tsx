@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import Moveable from "react-moveable";
 import { useProject } from "../context/ProjectContext";
-import FurnitureLibrary from "../components/FurnitureLibrary";
+import FurnitureLibrary from "./FurnitureLibrary";
 import FurnitureProperties from "../components/FurnitureProperties";
 
 import { furnitureLibrary } from "../data/furnitureData";
@@ -53,13 +53,13 @@ function keepInsideRoom(x: number, y: number) {
 
 function Editor() {
   const {
-  project,
-  setProject,
-  undo,
-  redo,
-  canUndo,
-  canRedo,
-} = useProject();
+    project,
+    setProject,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useProject();
 
   // Selected furniture ID
   const [selectedId, setSelectedId] =
@@ -313,6 +313,8 @@ useEffect(() => {
       height: definition.height,
 
       model3D: definition.model3D,
+      visible: true,
+      locked: false,
     };
 
     setProject((currentProject) => ({
@@ -563,19 +565,25 @@ useEffect(() => {
           {/* FURNITURE */}
           {/* ========================================= */}
 
-          {project.furniture.map((item) => (
-            <div
-              key={item.id}
-              data-furniture-id={item.id}
-              onClick={(event) => {
-                event.stopPropagation();
+          {project.furniture.map((item) => {
+            if (!item.visible) {
+              return null;
+            }
 
-                setSelectedId(item.id);
+            return (
+              <div
+                key={item.id}
+                data-furniture-id={item.id}
+                 onClick={(event) => {
+                    event.stopPropagation();
 
-                setTarget(
-                  event.currentTarget
-                );
-              }}
+                    if (item.locked) {
+                    return;
+                  }
+
+                  setSelectedId(item.id);
+                  setTarget(event.currentTarget);
+                }}
               style={{
                 position: "absolute",
 
@@ -603,7 +611,9 @@ useEffect(() => {
                     ? "#eef4ff"
                     : "transparent",
 
-                cursor: "move",
+                cursor: item.locked
+                  ? "not-allowed"
+                  : "move",
 
                 userSelect: "none",
 
@@ -618,136 +628,69 @@ useEffect(() => {
               {getFurnitureEmoji(item.name)}{" "}
               {item.name}
             </div>
-          ))}
+            );
+          })}
 
+          {/* ========================================= */}
           {/* ========================================= */}
           {/* MOVEABLE CONTROLS */}
           {/* ========================================= */}
 
-          {target && selectedId !== null && (
-            <Moveable
-              target={target}
-              draggable={true}
-              resizable={true}
-              rotatable={true}
-              origin={false}
-
-              // -----------------------------------
-              // DRAG
-              // -----------------------------------
-
-              onDrag={({
-                target,
-                left,
-                top,
-              }) => {
-                target.style.left =
-                  `${left}px`;
-
-                target.style.top =
-                  `${top}px`;
-              }}
-
-              onDragEnd={({ lastEvent }) => {
-                if (
-                  !lastEvent ||
-                  selectedId === null
-                ) {
-                  return;
-                }
-
-                const snappedX =
-                  snapToGrid(
-                    lastEvent.left,
-                    GRID_SIZE
-                  );
-
-                const snappedY =
-                  snapToGrid(
-                    lastEvent.top,
-                    GRID_SIZE
-                  );
-
-                const position =
-                  keepInsideRoom(
-                    snappedX,
-                    snappedY
-                  );
-
-                updateFurniture(
-                  selectedId,
-                  position
-                );
-              }}
-
-              // -----------------------------------
-              // RESIZE
-              // -----------------------------------
-
-              onResize={({
-                target,
-                width,
-                height,
-              }) => {
-                target.style.width =
-                  `${width}px`;
-
-                target.style.height =
-                  `${height}px`;
-              }}
-
-              onResizeEnd={({ lastEvent }) => {
-                if (
-                  !lastEvent ||
-                  selectedId === null
-                ) {
-                  return;
-                }
-
-                updateFurniture(
-                  selectedId,
-                  {
-                    width:
-                      lastEvent.width,
-
-                    height:
-                      lastEvent.height,
+          {target &&
+            selectedId !== null &&
+            !project.furniture.find(
+              (item) => item.id === selectedId
+            )?.locked && (
+              <Moveable
+                target={target}
+                draggable={true}
+                resizable={true}
+                rotatable={true}
+                origin={false}
+                onDrag={({ target, left, top }) => {
+                  target.style.left = `${left}px`;
+                  target.style.top = `${top}px`;
+                }}
+                onDragEnd={({ lastEvent }) => {
+                  if (!lastEvent || selectedId === null) {
+                    return;
                   }
-                );
-              }}
 
-              // -----------------------------------
-              // ROTATE
-              // -----------------------------------
+                  const position = keepInsideRoom(
+                    snapToGrid(lastEvent.left, GRID_SIZE),
+                    snapToGrid(lastEvent.top, GRID_SIZE)
+                  );
 
-              onRotate={({
-                target,
-                transform,
-              }) => {
-                target.style.transform =
-                  transform;
-              }}
-
-              onRotateEnd={({
-                lastEvent,
-              }) => {
-                if (
-                  !lastEvent ||
-                  selectedId === null
-                ) {
-                  return;
-                }
-
-                updateFurniture(
-                  selectedId,
-                  {
-                    rotation:
-                      lastEvent.rotation,
+                  updateFurniture(selectedId, position);
+                }}
+                onResize={({ target, width, height }) => {
+                  target.style.width = `${width}px`;
+                  target.style.height = `${height}px`;
+                }}
+                onResizeEnd={({ lastEvent }) => {
+                  if (!lastEvent || selectedId === null) {
+                    return;
                   }
-                );
-              }}
-            />
-          )}
+
+                  updateFurniture(selectedId, {
+                    width: lastEvent.width,
+                    height: lastEvent.height,
+                  });
+                }}
+                onRotate={({ target, transform }) => {
+                  target.style.transform = transform;
+                }}
+                onRotateEnd={({ lastEvent }) => {
+                  if (!lastEvent || selectedId === null) {
+                    return;
+                  }
+
+                  updateFurniture(selectedId, {
+                    rotation: lastEvent.rotation,
+                  });
+                }}
+              />
+            )}
         </div>
       </div>
 

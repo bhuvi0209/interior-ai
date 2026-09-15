@@ -59,7 +59,125 @@ export default function FurnitureProperties({
 
     onClose();
   };
+  const toggleVisibility = () => {
+  updateFurniture({
+    visible: !furniture.visible,
+  });
+};
+const toggleLock = () => {
+  updateFurniture({
+    locked: !furniture.locked,
+  });
+};
+const bringForward = () => {
+  setProject((currentProject) => {
+    const index =
+      currentProject.furniture.findIndex(
+        (item) => item.id === selectedId
+      );
 
+    if (
+      index === -1 ||
+      index === currentProject.furniture.length - 1
+    ) {
+      return currentProject;
+    }
+
+    const furniture = [
+      ...currentProject.furniture,
+    ];
+
+    const current = furniture[index];
+    const next = furniture[index + 1];
+
+    furniture[index] = next;
+    furniture[index + 1] = current;
+
+    return {
+      ...currentProject,
+      furniture,
+    };
+  });
+};
+const sendBackward = () => {
+  setProject((currentProject) => {
+    const index =
+      currentProject.furniture.findIndex(
+        (item) => item.id === selectedId
+      );
+
+    if (index <= 0) {
+      return currentProject;
+    }
+
+    const furniture = [
+      ...currentProject.furniture,
+    ];
+
+    const current = furniture[index];
+    const previous = furniture[index - 1];
+
+    furniture[index] = previous;
+    furniture[index - 1] = current;
+
+    return {
+      ...currentProject,
+      furniture,
+    };
+  });
+};
+const bringToFront = () => {
+  setProject((currentProject) => {
+    const selected =
+      currentProject.furniture.find(
+        (item) => item.id === selectedId
+      );
+
+    if (!selected) {
+      return currentProject;
+    }
+
+    const remaining =
+      currentProject.furniture.filter(
+        (item) => item.id !== selectedId
+      );
+
+    return {
+      ...currentProject,
+
+      furniture: [
+        ...remaining,
+        selected,
+      ],
+    };
+  });
+};
+const sendToBack = () => {
+  setProject((currentProject) => {
+    const selected =
+      currentProject.furniture.find(
+        (item) => item.id === selectedId
+      );
+
+    if (!selected) {
+      return currentProject;
+    }
+
+    const remaining =
+      currentProject.furniture.filter(
+        (item) => item.id !== selectedId
+      );
+
+    return {
+      ...currentProject,
+
+      furniture: [
+        selected,
+        ...remaining,
+      ],
+    };
+  });
+};
   return (
     <div
       style={{
@@ -251,7 +369,100 @@ export default function FurnitureProperties({
       >
         📋 Duplicate
       </button>
+        {/* Layer Controls */}
 
+<div
+  style={{
+    marginTop: "10px",
+    marginBottom: "20px",
+    paddingTop: "15px",
+    borderTop: "1px solid #ddd",
+  }}
+>
+  <h3
+    style={{
+      marginBottom: "12px",
+    }}
+  >
+    Layer Controls
+  </h3>
+
+  <button
+    onClick={toggleVisibility}
+    style={{
+      width: "100%",
+      padding: "10px",
+      marginBottom: "8px",
+      cursor: "pointer",
+    }}
+  >
+    {furniture.visible
+      ? "👁️ Hide Furniture"
+      : "👁️ Show Furniture"}
+  </button>
+
+  <button
+    onClick={toggleLock}
+    style={{
+      width: "100%",
+      padding: "10px",
+      marginBottom: "12px",
+      cursor: "pointer",
+    }}
+  >
+    {furniture.locked
+      ? "🔒 Unlock Furniture"
+      : "🔓 Lock Furniture"}
+  </button>
+
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr",
+      gap: "8px",
+    }}
+  >
+    <button
+      onClick={bringForward}
+      style={{
+        padding: "8px",
+        cursor: "pointer",
+      }}
+    >
+      ⬆️ Forward
+    </button>
+
+    <button
+      onClick={sendBackward}
+      style={{
+        padding: "8px",
+        cursor: "pointer",
+      }}
+    >
+      ⬇️ Backward
+    </button>
+
+    <button
+      onClick={bringToFront}
+      style={{
+        padding: "8px",
+        cursor: "pointer",
+      }}
+    >
+      ⬆️ Front
+    </button>
+
+    <button
+      onClick={sendToBack}
+      style={{
+        padding: "8px",
+        cursor: "pointer",
+      }}
+    >
+      ⬇️ Back
+    </button>
+  </div>
+</div>
       <button
         type="button"
         onClick={deleteFurniture}
