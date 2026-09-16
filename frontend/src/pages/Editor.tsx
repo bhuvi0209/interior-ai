@@ -1,9 +1,12 @@
 import { useRef, useState, useEffect } from "react";
 import Moveable from "react-moveable";
+
 import { useProject } from "../context/ProjectContext";
+
 import FurnitureLibrary from "./FurnitureLibrary";
 import FurnitureProperties from "../components/FurnitureProperties";
 import LayersPanel from "../components/LayersPanel";
+
 import { furnitureLibrary } from "../data/furnitureData";
 
 import {
@@ -59,9 +62,15 @@ function Editor() {
     redo,
     canUndo,
     canRedo,
+    saveProject,
+    loadProject,
+    clearSavedProject,
   } = useProject();
 
-  // Selected furniture ID
+  // ---------------------------------------------
+  // SELECTED FURNITURE
+  // ---------------------------------------------
+
   const [selectedId, setSelectedId] =
     useState<string | number | null>(null);
 
@@ -69,66 +78,185 @@ function Editor() {
   const [target, setTarget] =
     useState<HTMLElement | null>(null);
 
-    const selectFurnitureFromLayer = (
-      id: string | number
-    ) => {
-      const element =
-        document.querySelector(
-          `[data-furniture-id="${id}"]`
-        ) as HTMLElement | null;
+  // ---------------------------------------------
+  // ZOOM
+  // ---------------------------------------------
 
-  setSelectedId(id);
-  setTarget(element);
-};
-useEffect(() => {
-  const handleKeyDown = (
-    event: KeyboardEvent
+  const [zoom, setZoom] = useState(1);
+
+  // ---------------------------------------------
+  // GRID
+  // ---------------------------------------------
+
+  const [showGrid, setShowGrid] = useState(true);
+
+  // ---------------------------------------------
+  // ROOM REFERENCE
+  // ---------------------------------------------
+
+  const stageRef =
+    useRef<HTMLDivElement | null>(null);
+
+  // ---------------------------------------------
+  // SELECT FURNITURE FROM LAYERS
+  // ---------------------------------------------
+
+  const selectFurnitureFromLayer = (
+    id: string | number
   ) => {
-    // Do not use shortcuts while typing
-    const target =
-      event.target as HTMLElement;
+    const element =
+      document.querySelector(
+        `[data-furniture-id="${id}"]`
+      ) as HTMLElement | null;
 
-    if (
-      target.tagName === "INPUT" ||
-      target.tagName === "TEXTAREA"
-    ) {
-      return;
-    }
+    setSelectedId(id);
+    setTarget(element);
+  };
 
-    // Undo
-    if (
-      (event.ctrlKey || event.metaKey) &&
-      event.key.toLowerCase() === "z"
-    ) {
-      event.preventDefault();
+  // ---------------------------------------------
+  // KEYBOARD SHORTCUTS
+  // ---------------------------------------------
 
-      if (event.shiftKey) {
-        redo();
-      } else {
-        undo();
+  useEffect(() => {
+    const handleKeyDown = (
+      event: KeyboardEvent
+    ) => {
+      // Do not use shortcuts while typing
+      const keyboardTarget =
+        event.target as HTMLElement;
+
+      if (
+        keyboardTarget.tagName === "INPUT" ||
+        keyboardTarget.tagName === "TEXTAREA"
+      ) {
+        return;
       }
 
-      return;
-    }
+      // -----------------------------------------
+      // UNDO
+      // -----------------------------------------
 
-    // Redo
-    if (
-      (event.ctrlKey || event.metaKey) &&
-      event.key.toLowerCase() === "y"
-    ) {
-      event.preventDefault();
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === "z"
+      ) {
+        event.preventDefault();
 
-      redo();
+        if (event.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
 
-      return;
-    }
+        return;
+      }
 
-    // Duplicate
-    if (
-      (event.ctrlKey || event.metaKey) &&
-      event.key.toLowerCase() === "d"
-    ) {
-      event.preventDefault();
+      // -----------------------------------------
+      // REDO
+      // -----------------------------------------
+
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === "y"
+      ) {
+        event.preventDefault();
+
+        redo();
+
+        return;
+      }
+
+      // -----------------------------------------
+      // DUPLICATE
+      // -----------------------------------------
+
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === "d"
+      ) {
+        event.preventDefault();
+
+        if (selectedId === null) {
+          return;
+        }
+
+        const selectedFurniture =
+          project.furniture.find(
+            (item) =>
+              item.id === selectedId
+          );
+
+        if (!selectedFurniture) {
+          return;
+        }
+
+        if (selectedFurniture.locked) {
+          return;
+        }
+
+        setProject((currentProject) => ({
+          ...currentProject,
+
+          furniture: [
+            ...currentProject.furniture,
+
+            {
+              ...selectedFurniture,
+              id: Date.now(),
+              x: selectedFurniture.x + 40,
+              y: selectedFurniture.y + 40,
+            },
+          ],
+        }));
+
+        return;
+      }
+
+      // -----------------------------------------
+      // DELETE
+      // -----------------------------------------
+
+      if (
+        event.key === "Delete" ||
+        event.key === "Backspace"
+      ) {
+        if (selectedId === null) {
+          return;
+        }
+
+        const selectedFurniture =
+          project.furniture.find(
+            (item) =>
+              item.id === selectedId
+          );
+
+        if (
+          selectedFurniture?.locked
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+
+        setProject((currentProject) => ({
+          ...currentProject,
+
+          furniture:
+            currentProject.furniture.filter(
+              (item) =>
+                item.id !== selectedId
+            ),
+        }));
+
+        setSelectedId(null);
+        setTarget(null);
+
+        return;
+      }
+
+      // -----------------------------------------
+      // ARROW MOVEMENT
+      // -----------------------------------------
 
       if (selectedId === null) {
         return;
@@ -140,35 +268,32 @@ useEffect(() => {
             item.id === selectedId
         );
 
-      if (!selectedFurniture) {
+      if (selectedFurniture?.locked) {
         return;
       }
 
-      setProject((currentProject) => ({
-        ...currentProject,
+      let dx = 0;
+      let dy = 0;
 
-        furniture: [
-          ...currentProject.furniture,
+      switch (event.key) {
+        case "ArrowLeft":
+          dx = -10;
+          break;
 
-          {
-            ...selectedFurniture,
-            id: Date.now(),
-            x: selectedFurniture.x + 40,
-            y: selectedFurniture.y + 40,
-          },
-        ],
-      }));
+        case "ArrowRight":
+          dx = 10;
+          break;
 
-      return;
-    }
+        case "ArrowUp":
+          dy = -10;
+          break;
 
-    // Delete
-    if (
-      event.key === "Delete" ||
-      event.key === "Backspace"
-    ) {
-      if (selectedId === null) {
-        return;
+        case "ArrowDown":
+          dy = 10;
+          break;
+
+        default:
+          return;
       }
 
       event.preventDefault();
@@ -177,93 +302,37 @@ useEffect(() => {
         ...currentProject,
 
         furniture:
-          currentProject.furniture.filter(
+          currentProject.furniture.map(
             (item) =>
-              item.id !== selectedId
+              item.id === selectedId
+                ? {
+                    ...item,
+                    x: item.x + dx,
+                    y: item.y + dy,
+                  }
+                : item
           ),
       }));
+    };
 
-      setSelectedId(null);
-      setTarget(null);
-
-      return;
-    }
-
-    // Arrow movement
-    if (selectedId === null) {
-      return;
-    }
-
-    let dx = 0;
-    let dy = 0;
-
-    switch (event.key) {
-      case "ArrowLeft":
-        dx = -10;
-        break;
-
-      case "ArrowRight":
-        dx = 10;
-        break;
-
-      case "ArrowUp":
-        dy = -10;
-        break;
-
-      case "ArrowDown":
-        dy = 10;
-        break;
-
-      default:
-        return;
-    }
-
-    event.preventDefault();
-
-    setProject((currentProject) => ({
-      ...currentProject,
-
-      furniture:
-        currentProject.furniture.map(
-          (item) =>
-            item.id === selectedId
-              ? {
-                  ...item,
-                  x: item.x + dx,
-                  y: item.y + dy,
-                }
-              : item
-        ),
-    }));
-  };
-
-  window.addEventListener(
-    "keydown",
-    handleKeyDown
-  );
-
-  return () => {
-    window.removeEventListener(
+    window.addEventListener(
       "keydown",
       handleKeyDown
     );
-  };
-}, [
-  project,
-  selectedId,
-  setProject,
-  undo,
-  redo,
-]);
-  // Zoom
-  const [zoom, setZoom] = useState(1);
 
-  // Grid
-  const [showGrid, setShowGrid] = useState(true);
-
-  // Room reference
-  const stageRef =
-    useRef<HTMLDivElement | null>(null);
+    return () => {
+      window.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
+    };
+  }, [
+    project,
+    selectedId,
+    setProject,
+    undo,
+    redo,
+  ]);
 
   // ---------------------------------------------
   // UPDATE FURNITURE
@@ -276,15 +345,16 @@ useEffect(() => {
     setProject((currentProject) => ({
       ...currentProject,
 
-      furniture: currentProject.furniture.map(
-        (item) =>
-          item.id === id
-            ? {
-                ...item,
-                ...changes,
-              }
-            : item
-      ),
+      furniture:
+        currentProject.furniture.map(
+          (item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  ...changes,
+                }
+              : item
+        ),
     }));
   };
 
@@ -297,10 +367,13 @@ useEffect(() => {
   ) => {
     const definition =
       furnitureLibrary.find(
-        (item) => item.id === furnitureId
+        (item) =>
+          item.id === furnitureId
       );
 
-    if (!definition) return;
+    if (!definition) {
+      return;
+    }
 
     const newFurniture = {
       id: Date.now(),
@@ -325,7 +398,9 @@ useEffect(() => {
       height: definition.height,
 
       model3D: definition.model3D,
+
       visible: true,
+
       locked: false,
     };
 
@@ -338,10 +413,10 @@ useEffect(() => {
       ],
     }));
 
-    setSelectedId(newFurniture.id);
+    setSelectedId(
+      newFurniture.id
+    );
 
-    // Moveable target will be assigned
-    // when the furniture element is rendered.
     setTarget(null);
   };
 
@@ -350,381 +425,601 @@ useEffect(() => {
   // ---------------------------------------------
 
   return (
-    
     <div
       style={{
         display: "flex",
-        minHeight: "100vh",
+        flexDirection: "column",
         width: "100%",
-        background: "#f5f5f5",
+        height: "100%",
       }}
     >
-      <LayersPanel
-  selectedId={selectedId}
-  onSelect={
-    selectFurnitureFromLayer
-  }
-/>
-      <div
-  style={{
-    display: "flex",
-    gap: "8px",
-    padding: "10px",
-    borderBottom: "1px solid #ddd",
-    background: "#fff",
-  }}
->
-  <button
-    onClick={undo}
-    disabled={!canUndo}
-    style={{
-      padding: "8px 14px",
-      cursor: canUndo
-        ? "pointer"
-        : "not-allowed",
-    }}
-  >
-    ↩️ Undo
-  </button>
-
-  <button
-    onClick={redo}
-    disabled={!canRedo}
-    style={{
-      padding: "8px 14px",
-      cursor: canRedo
-        ? "pointer"
-        : "not-allowed",
-    }}
-  >
-    ↪️ Redo
-  </button>
-</div>
-      {/* ========================================= */}
-      {/* LEFT - FURNITURE LIBRARY */}
-      {/* ========================================= */}
-
-      <FurnitureLibrary
-        onAddFurniture={handleAddFurniture}
-      />
-
-      {/* ========================================= */}
-      {/* CENTER - 2D EDITOR */}
-      {/* ========================================= */}
+      {/* ======================================= */}
+      {/* PROJECT TOOLBAR */}
+      {/* ======================================= */}
 
       <div
         style={{
-          flex: 1,
-          padding: "24px",
-          overflow: "auto",
+          height: "55px",
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          padding: "0 15px",
+          background: "#ffffff",
+          borderBottom: "1px solid #ddd",
+          boxSizing: "border-box",
         }}
       >
-        <h1
+        <button
+          type="button"
+          onClick={saveProject}
           style={{
-            marginTop: 0,
-            marginBottom: "8px",
+            padding: "8px 14px",
+            cursor: "pointer",
+            border: "1px solid #ccc",
+            borderRadius: "5px",
+            background: "#ffffff",
           }}
         >
-          2D Room Editor
-        </h1>
+          💾 Save
+        </button>
 
-        <p
+        <button
+          type="button"
+          onClick={loadProject}
           style={{
-            color: "#666",
-            marginTop: 0,
+            padding: "8px 14px",
+            cursor: "pointer",
+            border: "1px solid #ccc",
+            borderRadius: "5px",
+            background: "#ffffff",
           }}
         >
-          Drag, resize, and rotate furniture
-          inside your room.
-        </p>
+          📂 Load
+        </button>
 
-        {/* ========================================= */}
-        {/* EDITOR CONTROLS */}
-        {/* ========================================= */}
+        <button
+          type="button"
+          onClick={clearSavedProject}
+          style={{
+            padding: "8px 14px",
+            cursor: "pointer",
+            border: "1px solid #ccc",
+            borderRadius: "5px",
+            background: "#ffffff",
+          }}
+        >
+          🗑️ Clear Saved
+        </button>
+
+        <div
+          style={{
+            marginLeft: "auto",
+            fontSize: "12px",
+            color: "#777",
+          }}
+        >
+          {project.furniture.length} furniture item
+          {project.furniture.length !== 1
+            ? "s"
+            : ""}
+        </div>
+      </div>
+
+      {/* ======================================= */}
+      {/* MAIN EDITOR AREA */}
+      {/* ======================================= */}
+
+      <div
+        style={{
+          display: "flex",
+          flex: 1,
+          minHeight: 0,
+          width: "100%",
+        }}
+      >
+        {/* ===================================== */}
+        {/* LAYERS PANEL */}
+        {/* ===================================== */}
+
+        <LayersPanel
+          selectedId={selectedId}
+          onSelect={
+            selectFurnitureFromLayer
+          }
+        />
+
+        {/* ===================================== */}
+        {/* FURNITURE LIBRARY + 2D EDITOR */}
+        {/* ===================================== */}
 
         <div
           style={{
             display: "flex",
-            gap: "10px",
-            alignItems: "center",
-            marginBottom: "15px",
-            flexWrap: "wrap",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() =>
-              setZoom((value) =>
-                Math.max(0.5, value - 0.1)
-              )
-            }
-          >
-            −
-          </button>
-
-          <span>
-            Zoom: {Math.round(zoom * 100)}%
-          </span>
-
-          <button
-            type="button"
-            onClick={() =>
-              setZoom((value) =>
-                Math.min(2, value + 0.1)
-              )
-            }
-          >
-            +
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setZoom(1)}
-          >
-            Reset Zoom
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              setShowGrid((value) => !value)
-            }
-          >
-            {showGrid
-              ? "Hide Grid"
-              : "Show Grid"}
-          </button>
-        </div>
-
-        {/* ========================================= */}
-        {/* ROOM DIMENSIONS */}
-        {/* ========================================= */}
-
-        <div
-          style={{
-            marginBottom: "10px",
-            fontSize: "14px",
-            color: "#666",
-          }}
-        >
-          Room: {ROOM_WIDTH} × {ROOM_HEIGHT}
-        </div>
-
-        {/* ========================================= */}
-        {/* ROOM */}
-        {/* ========================================= */}
-
-        <div
-          ref={stageRef}
-          onClick={() => {
-            setSelectedId(null);
-            setTarget(null);
-          }}
-          onDragOver={(event) => {
-            event.preventDefault();
-
-            event.dataTransfer.dropEffect =
-              "copy";
-          }}
-          onDrop={(event) => {
-            event.preventDefault();
-
-            const furnitureId =
-              event.dataTransfer.getData(
-                "furnitureId"
-              );
-
-            if (furnitureId) {
-              handleAddFurniture(
-                furnitureId
-              );
-            }
-          }}
-          style={{
-            width: ROOM_WIDTH,
-            height: ROOM_HEIGHT,
-            position: "relative",
+            flex: 1,
+            minWidth: 0,
             overflow: "hidden",
-            border: "2px solid #333",
-            backgroundColor: "#f8f8f8",
-            transform: `scale(${zoom})`,
-            transformOrigin: "top left",
           }}
         >
-          {/* ========================================= */}
-          {/* GRID */}
-          {/* ========================================= */}
+          {/* =================================== */}
+          {/* LEFT - FURNITURE LIBRARY */}
+          {/* =================================== */}
 
-          {showGrid && (
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                pointerEvents: "none",
-
-                backgroundImage: `
-                  linear-gradient(
-                    rgba(0,0,0,0.12) 1px,
-                    transparent 1px
-                  ),
-                  linear-gradient(
-                    90deg,
-                    rgba(0,0,0,0.12) 1px,
-                    transparent 1px
-                  )
-                `,
-
-                backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
-              }}
-            />
-          )}
-
-          {/* ========================================= */}
-          {/* FURNITURE */}
-          {/* ========================================= */}
-
-          {project.furniture.map((item) => {
-            if (!item.visible) {
-              return null;
+          <FurnitureLibrary
+            onAddFurniture={
+              handleAddFurniture
             }
+          />
 
-            return (
-              <div
-                key={item.id}
-                data-furniture-id={item.id}
-                 onClick={(event) => {
-                    event.stopPropagation();
+          {/* =================================== */}
+          {/* CENTER - 2D EDITOR */}
+          {/* =================================== */}
 
-                    if (item.locked) {
-                    return;
-                  }
-
-                  setSelectedId(item.id);
-                  setTarget(event.currentTarget);
-                }}
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              padding: "24px",
+              overflow: "auto",
+            }}
+          >
+            <h1
               style={{
-                position: "absolute",
-
-                left: item.x,
-
-                top: item.y,
-
-                transform: `
-                  translate(-50%, -50%)
-                  rotate(${item.rotation ?? 0}deg)
-                  scale(${item.scale ?? 1})
-                `,
-
-                padding: "20px",
-
-                borderRadius: "8px",
-
-                border:
-                  selectedId === item.id
-                    ? "2px solid #333"
-                    : "2px solid transparent",
-
-                background:
-                  selectedId === item.id
-                    ? "#eef4ff"
-                    : "transparent",
-
-                cursor: item.locked
-                  ? "not-allowed"
-                  : "move",
-
-                userSelect: "none",
-
-                zIndex:
-                  selectedId === item.id
-                    ? 10
-                    : 1,
-
-                whiteSpace: "nowrap",
+                marginTop: 0,
+                marginBottom: "8px",
               }}
             >
-              {getFurnitureEmoji(item.name)}{" "}
-              {item.name}
-            </div>
-            );
-          })}
+              2D Room Editor
+            </h1>
 
-          {/* ========================================= */}
-          {/* ========================================= */}
-          {/* MOVEABLE CONTROLS */}
-          {/* ========================================= */}
+            <p
+              style={{
+                color: "#666",
+                marginTop: 0,
+              }}
+            >
+              Drag, resize, and rotate
+              furniture inside your room.
+            </p>
 
-          {target &&
-            selectedId !== null &&
-            !project.furniture.find(
-              (item) => item.id === selectedId
-            )?.locked && (
-              <Moveable
-                target={target}
-                draggable={true}
-                resizable={true}
-                rotatable={true}
-                origin={false}
-                onDrag={({ target, left, top }) => {
-                  target.style.left = `${left}px`;
-                  target.style.top = `${top}px`;
+            {/* ================================= */}
+            {/* UNDO / REDO */}
+            {/* ================================= */}
+
+            <div
+              style={{
+                display: "flex",
+                gap: "8px",
+                padding: "10px 0",
+                marginBottom: "10px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={undo}
+                disabled={!canUndo}
+                style={{
+                  padding: "8px 14px",
+                  cursor: canUndo
+                    ? "pointer"
+                    : "not-allowed",
                 }}
-                onDragEnd={({ lastEvent }) => {
-                  if (!lastEvent || selectedId === null) {
-                    return;
-                  }
+              >
+                ↩️ Undo
+              </button>
 
-                  const position = keepInsideRoom(
-                    snapToGrid(lastEvent.left, GRID_SIZE),
-                    snapToGrid(lastEvent.top, GRID_SIZE)
+              <button
+                type="button"
+                onClick={redo}
+                disabled={!canRedo}
+                style={{
+                  padding: "8px 14px",
+                  cursor: canRedo
+                    ? "pointer"
+                    : "not-allowed",
+                }}
+              >
+                ↪️ Redo
+              </button>
+            </div>
+
+            {/* ================================= */}
+            {/* EDITOR CONTROLS */}
+            {/* ================================= */}
+
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                alignItems: "center",
+                marginBottom: "15px",
+                flexWrap: "wrap",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setZoom((value) =>
+                    Math.max(
+                      0.5,
+                      value - 0.1
+                    )
+                  )
+                }
+              >
+                −
+              </button>
+
+              <span>
+                Zoom:{" "}
+                {Math.round(
+                  zoom * 100
+                )}
+                %
+              </span>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setZoom((value) =>
+                    Math.min(
+                      2,
+                      value + 0.1
+                    )
+                  )
+                }
+              >
+                +
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setZoom(1)
+                }
+              >
+                Reset Zoom
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowGrid(
+                    (value) => !value
+                  )
+                }
+              >
+                {showGrid
+                  ? "Hide Grid"
+                  : "Show Grid"}
+              </button>
+            </div>
+
+            {/* ================================= */}
+            {/* ROOM DIMENSIONS */}
+            {/* ================================= */}
+
+            <div
+              style={{
+                marginBottom: "10px",
+                fontSize: "14px",
+                color: "#666",
+              }}
+            >
+              Room: {ROOM_WIDTH} ×{" "}
+              {ROOM_HEIGHT}
+            </div>
+
+            {/* ================================= */}
+            {/* ROOM */}
+            {/* ================================= */}
+
+            <div
+              ref={stageRef}
+              onClick={() => {
+                setSelectedId(null);
+                setTarget(null);
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+
+                event.dataTransfer.dropEffect =
+                  "copy";
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+
+                const furnitureId =
+                  event.dataTransfer.getData(
+                    "furnitureId"
                   );
 
-                  updateFurniture(selectedId, position);
-                }}
-                onResize={({ target, width, height }) => {
-                  target.style.width = `${width}px`;
-                  target.style.height = `${height}px`;
-                }}
-                onResizeEnd={({ lastEvent }) => {
-                  if (!lastEvent || selectedId === null) {
-                    return;
+                if (furnitureId) {
+                  handleAddFurniture(
+                    furnitureId
+                  );
+                }
+              }}
+              style={{
+                width: ROOM_WIDTH,
+                height: ROOM_HEIGHT,
+                position: "relative",
+                overflow: "hidden",
+                border: "2px solid #333",
+                backgroundColor: "#f8f8f8",
+                transform: `scale(${zoom})`,
+                transformOrigin:
+                  "top left",
+              }}
+            >
+              {/* =============================== */}
+              {/* GRID */}
+              {/* =============================== */}
+
+              {showGrid && (
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    pointerEvents:
+                      "none",
+
+                    backgroundImage: `
+                      linear-gradient(
+                        rgba(0,0,0,0.12) 1px,
+                        transparent 1px
+                      ),
+                      linear-gradient(
+                        90deg,
+                        rgba(0,0,0,0.12) 1px,
+                        transparent 1px
+                      )
+                    `,
+
+                    backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
+                  }}
+                />
+              )}
+
+              {/* =============================== */}
+              {/* FURNITURE */}
+              {/* =============================== */}
+
+              {project.furniture.map(
+                (item) => {
+                  if (!item.visible) {
+                    return null;
                   }
 
-                  updateFurniture(selectedId, {
-                    width: lastEvent.width,
-                    height: lastEvent.height,
-                  });
-                }}
-                onRotate={({ target, transform }) => {
-                  target.style.transform = transform;
-                }}
-                onRotateEnd={({ lastEvent }) => {
-                  if (!lastEvent || selectedId === null) {
-                    return;
-                  }
+                  return (
+                    <div
+                      key={item.id}
+                      data-furniture-id={
+                        item.id
+                      }
+                      onClick={(event) => {
+                        event.stopPropagation();
 
-                  updateFurniture(selectedId, {
-                    rotation: lastEvent.rotation,
-                  });
-                }}
-              />
-            )}
+                        if (
+                          item.locked
+                        ) {
+                          return;
+                        }
+
+                        setSelectedId(
+                          item.id
+                        );
+
+                        setTarget(
+                          event.currentTarget
+                        );
+                      }}
+                      style={{
+                        position:
+                          "absolute",
+
+                        left: item.x,
+
+                        top: item.y,
+
+                        transform: `
+                          translate(-50%, -50%)
+                          rotate(${item.rotation ?? 0}deg)
+                          scale(${item.scale ?? 1})
+                        `,
+
+                        padding: "20px",
+
+                        borderRadius: "8px",
+
+                        border:
+                          selectedId ===
+                          item.id
+                            ? "2px solid #333"
+                            : "2px solid transparent",
+
+                        background:
+                          selectedId ===
+                          item.id
+                            ? "#eef4ff"
+                            : "transparent",
+
+                        cursor:
+                          item.locked
+                            ? "not-allowed"
+                            : "move",
+
+                        userSelect:
+                          "none",
+
+                        zIndex:
+                          selectedId ===
+                          item.id
+                            ? 10
+                            : 1,
+
+                        whiteSpace:
+                          "nowrap",
+                      }}
+                    >
+                      {getFurnitureEmoji(
+                        item.name
+                      )}{" "}
+                      {item.name}
+
+                      {item.locked && (
+                        <div
+                          style={{
+                            position:
+                              "absolute",
+                            top: "-20px",
+                            right: "-20px",
+                            fontSize:
+                              "16px",
+                          }}
+                        >
+                          🔒
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+              )}
+
+              {/* =============================== */}
+              {/* MOVEABLE CONTROLS */}
+              {/* =============================== */}
+
+              {target &&
+                selectedId !== null &&
+                !project.furniture.find(
+                  (item) =>
+                    item.id ===
+                    selectedId
+                )?.locked && (
+                  <Moveable
+                    target={target}
+                    draggable={true}
+                    resizable={true}
+                    rotatable={true}
+                    origin={false}
+                    onDrag={({
+                      target,
+                      left,
+                      top,
+                    }) => {
+                      target.style.left =
+                        `${left}px`;
+
+                      target.style.top =
+                        `${top}px`;
+                    }}
+                    onDragEnd={({
+                      lastEvent,
+                    }) => {
+                      if (
+                        !lastEvent ||
+                        selectedId ===
+                          null
+                      ) {
+                        return;
+                      }
+
+                      const position =
+                        keepInsideRoom(
+                          snapToGrid(
+                            lastEvent.left,
+                            GRID_SIZE
+                          ),
+                          snapToGrid(
+                            lastEvent.top,
+                            GRID_SIZE
+                          )
+                        );
+
+                      updateFurniture(
+                        selectedId,
+                        position
+                      );
+                    }}
+                    onResize={({
+                      target,
+                      width,
+                      height,
+                    }) => {
+                      target.style.width =
+                        `${width}px`;
+
+                      target.style.height =
+                        `${height}px`;
+                    }}
+                    onResizeEnd={({
+                      lastEvent,
+                    }) => {
+                      if (
+                        !lastEvent ||
+                        selectedId ===
+                          null
+                      ) {
+                        return;
+                      }
+
+                      updateFurniture(
+                        selectedId,
+                        {
+                          width:
+                            lastEvent.width,
+                          height:
+                            lastEvent.height,
+                        }
+                      );
+                    }}
+                    onRotate={({
+                      target,
+                      transform,
+                    }) => {
+                      target.style.transform =
+                        transform;
+                    }}
+                    onRotateEnd={({
+                      lastEvent,
+                    }) => {
+                      if (
+                        !lastEvent ||
+                        selectedId ===
+                          null
+                      ) {
+                        return;
+                      }
+
+                      updateFurniture(
+                        selectedId,
+                        {
+                          rotation:
+                            lastEvent.rotation,
+                        }
+                      );
+                    }}
+                  />
+                )}
+            </div>
+          </div>
         </div>
+
+        {/* ===================================== */}
+        {/* RIGHT - FURNITURE PROPERTIES */}
+        {/* ===================================== */}
+
+        {selectedId !== null && (
+          <FurnitureProperties
+            selectedId={selectedId}
+            onClose={() => {
+              setSelectedId(null);
+              setTarget(null);
+            }}
+          />
+        )}
       </div>
-
-      {/* ========================================= */}
-      {/* RIGHT - FURNITURE PROPERTIES */}
-      {/* ========================================= */}
-
-      {selectedId !== null && (
-        <FurnitureProperties
-          selectedId={selectedId}
-          onClose={() => {
-            setSelectedId(null);
-            setTarget(null);
-          }}
-        />
-      )}
     </div>
   );
 }
