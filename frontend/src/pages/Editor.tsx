@@ -3,7 +3,7 @@ import Moveable from "react-moveable";
 import { useProject } from "../context/ProjectContext";
 import FurnitureLibrary from "./FurnitureLibrary";
 import FurnitureProperties from "../components/FurnitureProperties";
-
+import LayersPanel from "../components/LayersPanel";
 import { furnitureLibrary } from "../data/furnitureData";
 
 import {
@@ -68,6 +68,18 @@ function Editor() {
   // DOM element controlled by Moveable
   const [target, setTarget] =
     useState<HTMLElement | null>(null);
+
+    const selectFurnitureFromLayer = (
+      id: string | number
+    ) => {
+      const element =
+        document.querySelector(
+          `[data-furniture-id="${id}"]`
+        ) as HTMLElement | null;
+
+  setSelectedId(id);
+  setTarget(element);
+};
 useEffect(() => {
   const handleKeyDown = (
     event: KeyboardEvent
@@ -347,6 +359,12 @@ useEffect(() => {
         background: "#f5f5f5",
       }}
     >
+      <LayersPanel
+  selectedId={selectedId}
+  onSelect={
+    selectFurnitureFromLayer
+  }
+/>
       <div
   style={{
     display: "flex",
