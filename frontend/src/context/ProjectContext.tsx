@@ -28,6 +28,11 @@ interface ProjectContextType {
   saveProject: () => void;
   loadProject: () => void;
   clearSavedProject: () => void;
+
+  exportProject: () => void;
+  importProject: (
+    file: File
+  ) => Promise<void>;
 }
 
 const ProjectContext =
@@ -234,24 +239,149 @@ export function ProjectProvider({
 
     alert("Saved project cleared.");
   };
+/*
+ * Export project as a JSON file.
+ */
+const exportProject = () => {
+  try {
+    const projectData =
+      JSON.stringify(
+        project,
+        null,
+        2
+      );
 
+    const blob = new Blob(
+      [projectData],
+      {
+        type: "application/json",
+      }
+    );
+
+    const url =
+      URL.createObjectURL(blob);
+
+    const link =
+      document.createElement("a");
+
+    link.href = url;
+
+    link.download =
+      "interior-ai-project.json";
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error(
+      "Failed to export project:",
+      error
+    );
+
+    alert(
+      "Failed to export project."
+    );
+  }
+};
+/*
+ * Import project from a JSON file.
+ */
+const importProject = async (
+  file: File
+) => {
+  try {
+    const text =
+      await file.text();
+
+    const importedProject =
+      JSON.parse(text) as Project;
+
+    /*
+     * Basic validation.
+     */
+    if (
+      !importedProject ||
+      typeof importedProject !==
+        "object"
+    ) {
+      throw new Error(
+        "Invalid project file."
+      );
+    }
+
+    if (
+      !Array.isArray(
+        importedProject.furniture
+      )
+    ) {
+      throw new Error(
+        "Invalid furniture data."
+      );
+    }
+
+    /*
+     * Update project.
+     */
+    setProjectState(
+      importedProject
+    );
+
+    /*
+     * Clear undo/redo history
+     * because this is a new project state.
+     */
+    setPast([]);
+    setFuture([]);
+
+    /*
+     * Also save the imported project
+     * into localStorage.
+     */
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(
+        importedProject
+      )
+    );
+
+    alert(
+      "Project imported successfully!"
+    );
+  } catch (error) {
+    console.error(
+      "Failed to import project:",
+      error
+    );
+
+    alert(
+      "Invalid project file."
+    );
+  }
+};
   return (
     <ProjectContext.Provider
-      value={{
-        project,
-        setProject,
+  value={{
+    project,
+    setProject,
 
-        undo,
-        redo,
+    undo,
+    redo,
 
-        canUndo: past.length > 0,
-        canRedo: future.length > 0,
+    canUndo: past.length > 0,
+    canRedo: future.length > 0,
 
-        saveProject,
-        loadProject,
-        clearSavedProject,
-      }}
-    >
+    saveProject,
+    loadProject,
+    clearSavedProject,
+
+    exportProject,
+    importProject,
+  }}
+>
       {children}
     </ProjectContext.Provider>
   );

@@ -56,16 +56,18 @@ function keepInsideRoom(x: number, y: number) {
 
 function Editor() {
   const {
-    project,
-    setProject,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    saveProject,
-    loadProject,
-    clearSavedProject,
-  } = useProject();
+  project,
+  setProject,
+  undo,
+  redo,
+  canUndo,
+  canRedo,
+  saveProject,
+  loadProject,
+  clearSavedProject,
+  exportProject,
+  importProject,
+} = useProject();
 
   // ---------------------------------------------
   // SELECTED FURNITURE
@@ -73,7 +75,28 @@ function Editor() {
 
   const [selectedId, setSelectedId] =
     useState<string | number | null>(null);
+  const fileInputRef =
+  useRef<HTMLInputElement | null>(
+    null
+  );
+  const handleImportProject = (
+  event: React.ChangeEvent<HTMLInputElement>
+) => {
+  const file =
+    event.target.files?.[0];
 
+  if (!file) {
+    return;
+  }
+
+  importProject(file);
+
+  /*
+   * Reset the input so the same file
+   * can be selected again later.
+   */
+  event.target.value = "";
+};
   // DOM element controlled by Moveable
   const [target, setTarget] =
     useState<HTMLElement | null>(null);
@@ -450,6 +473,41 @@ function Editor() {
           boxSizing: "border-box",
         }}
       >
+        <button
+  onClick={exportProject}
+  style={{
+    padding: "8px 14px",
+    cursor: "pointer",
+    border: "1px solid #ccc",
+    borderRadius: "5px",
+    background: "#ffffff",
+  }}
+>
+  ⬇️ Export
+</button>
+      <button
+  onClick={() =>
+    fileInputRef.current?.click()
+  }
+  style={{
+    padding: "8px 14px",
+    cursor: "pointer",
+    border: "1px solid #ccc",
+    borderRadius: "5px",
+    background: "#ffffff",
+  }}
+>
+  ⬆️ Import
+</button>
+<input
+  ref={fileInputRef}
+  type="file"
+  accept=".json,application/json"
+  onChange={handleImportProject}
+  style={{
+    display: "none",
+  }}
+/>
         <button
           type="button"
           onClick={saveProject}
