@@ -33,6 +33,7 @@ interface ProjectContextType {
   importProject: (
     file: File
   ) => Promise<void>;
+  newProject: () => void;
 }
 
 const ProjectContext =
@@ -47,12 +48,15 @@ export function ProjectProvider({
 }: {
   children: ReactNode;
 }) {
-  const [project, setProjectState] =
-    useState<Project>({
-      roomImage: "",
-      style: "",
-      furniture: [],
-    });
+ const [project, setProjectState] =
+  useState<Project>({
+    name: "Untitled Project",
+
+    roomImage: "",
+    style: "",
+
+    furniture: [],
+  });
 
   const [past, setPast] = useState<Project[]>([]);
   const [future, setFuture] = useState<Project[]>([]);
@@ -239,6 +243,42 @@ export function ProjectProvider({
 
     alert("Saved project cleared.");
   };
+  /*
+ * Create a completely new project.
+ */
+const newProject = () => {
+  const confirmed =
+    window.confirm(
+      "Start a new project? Unsaved changes will be replaced."
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const emptyProject: Project = {
+    name: "Untitled Project",
+
+    roomImage: "",
+    style: "",
+
+    furniture: [],
+  };
+
+  setProjectState(
+    emptyProject
+  );
+
+  setPast([]);
+  setFuture([]);
+
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(
+      emptyProject
+    )
+  );
+};
 /*
  * Export project as a JSON file.
  */
@@ -299,7 +339,12 @@ const importProject = async (
 
     const importedProject =
       JSON.parse(text) as Project;
-
+    if (
+  !importedProject.name
+) {
+  importedProject.name =
+    "Imported Project";
+}
     /*
      * Basic validation.
      */
@@ -380,6 +425,8 @@ const importProject = async (
 
     exportProject,
     importProject,
+
+    newProject,
   }}
 >
       {children}

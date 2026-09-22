@@ -23,8 +23,9 @@ export interface FurnitureItem {
 }
 
 export interface Project {
-  roomImage: string;
+  name: string;
 
+  roomImage: string;
   style: string;
 
   furniture: FurnitureItem[];

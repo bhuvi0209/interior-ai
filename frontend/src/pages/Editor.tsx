@@ -58,17 +58,21 @@ function Editor() {
   const {
   project,
   setProject,
+
   undo,
   redo,
   canUndo,
   canRedo,
+
   saveProject,
   loadProject,
   clearSavedProject,
+
   exportProject,
   importProject,
-} = useProject();
 
+  newProject,
+} = useProject();
   // ---------------------------------------------
   // SELECTED FURNITURE
   // ---------------------------------------------
@@ -506,6 +510,37 @@ function Editor() {
   onChange={handleImportProject}
   style={{
     display: "none",
+  }}
+  />
+  <button
+  onClick={newProject}
+  style={{
+    padding: "8px 14px",
+    cursor: "pointer",
+    border: "1px solid #ccc",
+    borderRadius: "5px",
+    background: "#ffffff",
+  }}
+>
+  🆕 New
+</button>
+
+<input
+  value={project.name}
+  onChange={(event) => {
+    setProject((currentProject) => ({
+      ...currentProject,
+      name: event.target.value,
+    }));
+  }}
+  placeholder="Project name"
+  style={{
+    width: "180px",
+    padding: "8px 10px",
+    border: "1px solid #ccc",
+    borderRadius: "5px",
+    fontSize: "14px",
+    outline: "none",
   }}
 />
         <button
