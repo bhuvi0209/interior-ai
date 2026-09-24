@@ -21,7 +21,8 @@ function App() {
 
         <Routes>
           <Route path="/" element={<Home />} />
-
+          <Route path="/3d" element={<ThreeDView />}
+/>
           <Route path="/upload" element={<UploadRoom />} />
           <Route path="/editor" element={<Editor />} />
           <Route
