@@ -1,6 +1,5 @@
 import { useRef, useState, useEffect } from "react";
 import Moveable from "react-moveable";
-
 import { useProject } from "../context/ProjectContext";
 
 import FurnitureLibrary from "./FurnitureLibrary";

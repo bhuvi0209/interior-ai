@@ -19,11 +19,11 @@ export const furnitureLibrary: FurnitureDefinition[] = [
     name: "Sofa",
     category: "Living Room",
     image2D: "",
-    model3D: "/models/sofa.glb",
     defaultScale: 2,
     width: 200,
     depth: 90,
     height: 80,
+    model3D: "/models/sofa.glb"
   },
 
   {
@@ -34,6 +34,7 @@ export const furnitureLibrary: FurnitureDefinition[] = [
     width: 80,
     depth: 80,
     height: 90,
+    model3D: "/models/chair.glb",
   },
 
   {

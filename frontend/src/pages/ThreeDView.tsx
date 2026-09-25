@@ -24,6 +24,7 @@ export default function ThreeDView() {
       <div
         style={{
           height: "55px",
+          flexShrink: 0,
           display: "flex",
           alignItems: "center",
           padding: "0 20px",
@@ -59,6 +60,7 @@ export default function ThreeDView() {
         style={{
           flex: 1,
           minHeight: 0,
+          width: "100%",
         }}
       >
         <RoomScene

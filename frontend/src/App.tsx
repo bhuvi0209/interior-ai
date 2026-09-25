@@ -12,6 +12,7 @@ import RoomEditor from "./pages/RoomEditor";
 import ProjectSummary from "./pages/ProjectSummary";
 import Editor from "./pages/Editor";
 import Navbar from "./components/Navbar";
+import DesignWorkspace from "./pages/DesignWorkspace";
 
 function App() {
   return (
@@ -24,7 +25,8 @@ function App() {
           <Route path="/3d" element={<ThreeDView />}
 />
           <Route path="/upload" element={<UploadRoom />} />
-          <Route path="/editor" element={<Editor />} />
+          <Route path="/editor" element={<DesignWorkspace />}
+/>
           <Route
             path="/style"
             element={<StyleSelection />}

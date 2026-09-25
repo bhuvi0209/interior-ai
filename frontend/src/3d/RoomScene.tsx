@@ -48,7 +48,8 @@ function RoomContent({ furniture }: RoomSceneProps) {
 
         const positionX = (item.x - 400) / 100;
         const positionZ = (item.y - 250) / 100;
-        const rotationY = ((item.rotation ?? 0) * Math.PI) / 180;
+        const rotationY =
+  ((item.rotation ?? 0) * Math.PI) / 180;
 
         return (
           <mesh
