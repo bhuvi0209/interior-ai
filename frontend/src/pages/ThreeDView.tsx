@@ -1,72 +1,70 @@
-import {
-  useProject,
-} from "../context/ProjectContext";
 
+import { useState } from "react";
 import RoomScene from "../3d/RoomScene";
+import { useProject } from "../context/ProjectContext";
 
 export default function ThreeDView() {
-  const {
-    project,
-  } = useProject();
+  const { project, setProject } = useProject();
+
+  const [selectedId, setSelectedId] =
+    useState<string | number | null>(null);
+
+  const [transformMode, setTransformMode] =
+    useState<"translate" | "rotate">("translate");
+
+  const handleTransformEnd = (
+    id: string | number,
+    x: number,
+    y: number,
+    rotation: number
+  ) => {
+    setProject((previousProject) => ({
+      ...previousProject,
+      furniture: previousProject.furniture.map((item) =>
+        item.id === id
+          ? { ...item, x, y, rotation }
+          : item
+      ),
+    }));
+  };
 
   return (
     <div
       style={{
         width: "100%",
-        height: "100vh",
+        minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        background: "#eeeeee",
       }}
     >
-      {/* Header */}
-
       <div
         style={{
-          height: "55px",
-          flexShrink: 0,
           display: "flex",
-          alignItems: "center",
-          padding: "0 20px",
+          gap: "10px",
+          padding: "12px",
           background: "#ffffff",
-          borderBottom:
-            "1px solid #ddd",
-          boxSizing: "border-box",
         }}
       >
-        <h2
-          style={{
-            margin: 0,
-            fontSize: "18px",
-          }}
-        >
-          3D View
-        </h2>
+        <button onClick={() => setTransformMode("translate")}>
+          Move
+        </button>
 
-        <div
-          style={{
-            marginLeft: "auto",
-            fontSize: "13px",
-            color: "#777",
-          }}
-        >
-          {project.name}
-        </div>
+        <button onClick={() => setTransformMode("rotate")}>
+          Rotate
+        </button>
+
+        <button onClick={() => setSelectedId(null)}>
+          Deselect
+        </button>
       </div>
 
-      {/* 3D Scene */}
-
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          width: "100%",
-        }}
-      >
+      <div style={{ flex: 1, minHeight: "600px" }}>
         <RoomScene
-          furniture={
-            project.furniture
-          }
+          furniture={project.furniture}
+          selectedId={selectedId}
+          transformMode={transformMode}
+          onSelect={setSelectedId}
+          onTransformEnd={handleTransformEnd}
         />
       </div>
     </div>

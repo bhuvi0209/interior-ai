@@ -23,7 +23,6 @@ export const furnitureLibrary: FurnitureDefinition[] = [
     width: 200,
     depth: 90,
     height: 80,
-    model3D: "/models/sofa.glb"
   },
 
   {

@@ -1,110 +1,100 @@
-import { useState, Suspense } from "react";
 
+import { useState } from "react";
 import Editor from "./Editor";
 import RoomScene from "../3d/RoomScene";
 import { useProject } from "../context/ProjectContext";
 
 type ViewMode = "2D" | "3D";
+type TransformMode = "translate" | "rotate";
 
 export default function DesignWorkspace() {
-  const [viewMode, setViewMode] =
-    useState<ViewMode>("2D");
+  const { project, setProject } = useProject();
 
-  const { project } = useProject();
+  const [viewMode, setViewMode] = useState<ViewMode>("2D");
+  const [selectedId, setSelectedId] = useState<
+    string | number | null
+  >(null);
+  const [transformMode, setTransformMode] =
+    useState<TransformMode>("translate");
+
+  const handleTransformEnd = (
+    id: string | number,
+    x: number,
+    y: number,
+    rotation: number
+  ) => {
+    setProject((previousProject) => ({
+      ...previousProject,
+      furniture: previousProject.furniture.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              x,
+              y,
+              rotation,
+            }
+          : item
+      ),
+    }));
+  };
 
   return (
     <div
       style={{
         width: "100%",
-        height: "100vh",
+        minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        overflow: "hidden",
-        background: "#f5f5f5",
       }}
     >
-      {/* View Switcher Toolbar */}
-
-      <div
+      <header
         style={{
-          height: "56px",
-          minHeight: "56px",
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "center",
           gap: "10px",
-          padding: "0 20px",
-          background: "#ffffff",
-          borderBottom: "1px solid #ddd",
-          boxSizing: "border-box",
+          padding: "12px 16px",
+          background: "#20242c",
+          color: "white",
         }}
       >
-        <h2
-          style={{
-            margin: 0,
-            fontSize: "18px",
-            fontWeight: 600,
-          }}
-        >
-          Interior AI
-        </h2>
+        <strong style={{ marginRight: "auto" }}>
+          {project.name || "Untitled Project"}
+        </strong>
 
-        <div
-          style={{
-            marginLeft: "auto",
-            display: "flex",
-            gap: "8px",
-          }}
-        >
-          <button
-            onClick={() => setViewMode("2D")}
-            style={{
-              padding: "9px 18px",
-              border: "1px solid #ccc",
-              borderRadius: "6px",
-              cursor: "pointer",
-              background:
-                viewMode === "2D"
-                  ? "#2563eb"
-                  : "#ffffff",
-              color:
-                viewMode === "2D"
-                  ? "#ffffff"
-                  : "#333333",
-              fontWeight: 600,
-            }}
-          >
-            2D Editor
-          </button>
+        <button onClick={() => setViewMode("2D")}>
+          2D View
+        </button>
 
-          <button
-            onClick={() => setViewMode("3D")}
-            style={{
-              padding: "9px 18px",
-              border: "1px solid #ccc",
-              borderRadius: "6px",
-              cursor: "pointer",
-              background:
-                viewMode === "3D"
-                  ? "#2563eb"
-                  : "#ffffff",
-              color:
-                viewMode === "3D"
-                  ? "#ffffff"
-                  : "#333333",
-              fontWeight: 600,
-            }}
-          >
-            3D View
-          </button>
-        </div>
-      </div>
+        <button onClick={() => setViewMode("3D")}>
+          3D View
+        </button>
 
-      {/* Main Workspace */}
+        {viewMode === "3D" && (
+          <>
+            <button
+              onClick={() => setTransformMode("translate")}
+            >
+              Move
+            </button>
 
-      <div
+            <button
+              onClick={() => setTransformMode("rotate")}
+            >
+              Rotate
+            </button>
+
+            <button onClick={() => setSelectedId(null)}>
+              Deselect
+            </button>
+          </>
+        )}
+      </header>
+
+      <main
         style={{
           flex: 1,
-          minHeight: 0,
+          minHeight: "600px",
           position: "relative",
         }}
       >
@@ -114,76 +104,20 @@ export default function DesignWorkspace() {
           <div
             style={{
               width: "100%",
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
+              height: "calc(100vh - 60px)",
+              minHeight: "600px",
             }}
           >
-            {/* 3D Project Header */}
-
-            <div
-              style={{
-                height: "45px",
-                minHeight: "45px",
-                display: "flex",
-                alignItems: "center",
-                padding: "0 20px",
-                background: "#ffffff",
-                borderBottom: "1px solid #ddd",
-                boxSizing: "border-box",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: "14px",
-                  fontWeight: 600,
-                }}
-              >
-                {project.name || "Untitled Project"}
-              </span>
-
-              <span
-                style={{
-                  marginLeft: "auto",
-                  fontSize: "12px",
-                  color: "#777",
-                }}
-              >
-                {project.furniture.length} furniture item
-                {project.furniture.length !== 1
-                  ? "s"
-                  : ""}
-              </span>
-            </div>
-
-            {/* 3D Scene */}
-
-            <div
-              style={{
-                flex: 1,
-                minHeight: 0,
-              }}
-            >
-              <Suspense
-                fallback={
-                  <div
-                    style={{
-                      padding: "20px",
-                      textAlign: "center",
-                    }}
-                  >
-                    Loading 3D scene...
-                  </div>
-                }
-              >
-                <RoomScene
-                  furniture={project.furniture}
-                />
-              </Suspense>
-            </div>
+            <RoomScene
+              furniture={project.furniture}
+              selectedId={selectedId}
+              transformMode={transformMode}
+              onSelect={setSelectedId}
+              onTransformEnd={handleTransformEnd}
+            />
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

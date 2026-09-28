@@ -27,7 +27,6 @@ export const furnitureItems:
     name: "Sofa",
     category: "Living Room",
     emoji: "🛋️",
-    model3D: "/models/sofa.glb",
     defaultScale: 1,
     width: 2.4,
     depth: 0.9,
