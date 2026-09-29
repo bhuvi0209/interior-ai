@@ -1,28 +1,66 @@
-import {
-  useGLTF,
-} from "@react-three/drei";
+import { Mesh } from "three";
 
-import type {
-  ThreeElements,
-} from "@react-three/fiber";
-
-type FurnitureModelProps =
-  ThreeElements["group"] & {
-    modelPath: string;
-  };
+interface FurnitureModelProps {
+  modelPath: string;
+  width?: number;
+  depth?: number;
+  height?: number;
+}
 
 export default function FurnitureModel({
-  modelPath,
-  ...props
+  width = 100,
+  depth = 100,
+  height = 100,
 }: FurnitureModelProps) {
-  const { scene } =
-    useGLTF(modelPath);
-
   return (
-    <group {...props}>
-      <primitive
-        object={scene}
-      />
+    <group>
+      {/* Seat */}
+      <mesh position={[0, height / 200, 0]}>
+        <boxGeometry args={[width / 100, height / 100, depth / 100]} />
+        <meshStandardMaterial />
+      </mesh>
+
+      {/* Back */}
+      <mesh
+        position={[
+          0,
+          height / 100,
+          -(depth / 200),
+        ]}
+      >
+        <boxGeometry
+          args={[width / 100, height / 100, 0.15]}
+        />
+        <meshStandardMaterial />
+      </mesh>
+
+      {/* Left arm */}
+      <mesh
+        position={[
+          -(width / 200),
+          height / 200,
+          0,
+        ]}
+      >
+        <boxGeometry
+          args={[0.15, height / 100, depth / 100]}
+        />
+        <meshStandardMaterial />
+      </mesh>
+
+      {/* Right arm */}
+      <mesh
+        position={[
+          width / 200,
+          height / 200,
+          0,
+        ]}
+      >
+        <boxGeometry
+          args={[0.15, height / 100, depth / 100]}
+        />
+        <meshStandardMaterial />
+      </mesh>
     </group>
   );
 }

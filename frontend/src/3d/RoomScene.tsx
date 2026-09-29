@@ -1,20 +1,19 @@
-
-import { useState, useRef, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import {
   Grid,
   OrbitControls,
   TransformControls,
 } from "@react-three/drei";
+import { useRef } from "react";
 import type { Group } from "three";
 import type { FurnitureItem } from "../types/Project";
 
 interface RoomSceneProps {
   furniture: FurnitureItem[];
-  selectedId?: string | number | null;
-  transformMode?: "translate" | "rotate";
-  onSelect?: (id: string | number) => void;
-  onTransformEnd?: (
+  selectedId: string | number | null;
+  transformMode: "translate" | "rotate";
+  onSelect: (id: string | number) => void;
+  onTransformEnd: (
     id: string | number,
     x: number,
     y: number,
@@ -44,17 +43,24 @@ function FurnitureObject({
 }: FurnitureObjectProps) {
   const groupRef = useRef<Group>(null);
 
+  // Convert 2D editor coordinates to 3D coordinates.
   const positionX = (item.x - 400) / 100;
   const positionZ = (item.y - 250) / 100;
-  const rotationY = ((item.rotation ?? 0) * Math.PI) / 180;
 
-  const width = Math.max(0.2, item.width ?? 1);
-  const depth = Math.max(0.2, item.depth ?? 1);
-  const height = Math.max(0.2, item.height ?? 1);
+  const width = (item.width ?? 100) / 100;
+  const depth = (item.depth ?? 100) / 100;
+  const height = (item.height ?? 100) / 100;
+
+  const furnitureScale = item.scale || 1;
+
+  const rotationY = ((item.rotation ?? 0) * Math.PI) / 180;
 
   const handleTransformEnd = () => {
     const group = groupRef.current;
-    if (!group) return;
+
+    if (!group) {
+      return;
+    }
 
     const updatedX = 400 + group.position.x * 100;
     const updatedY = 250 + group.position.z * 100;
@@ -69,32 +75,54 @@ function FurnitureObject({
     );
   };
 
-  const object = (
+  const furnitureGroup = (
     <group
       ref={groupRef}
-      position={[positionX, 0, positionZ]}
+      position={[
+        positionX,
+        (height * furnitureScale) / 2,
+        positionZ,
+      ]}
       rotation={[0, rotationY, 0]}
-      scale={item.scale || 1}
+      scale={furnitureScale}
       onClick={(event) => {
         event.stopPropagation();
         onSelect(item.id);
       }}
-      onPointerDown={(event) => {
-        event.stopPropagation();
-        onSelect(item.id);
-      }}
     >
-      <mesh
-        position={[0, height / 2, 0]}
-        castShadow
-        receiveShadow
-      >
-        <boxGeometry args={[width, height, depth]} />
+      {/* Temporary furniture representation */}
+      <mesh castShadow receiveShadow>
+        <boxGeometry
+          args={[width, height, depth]}
+        />
+
         <meshStandardMaterial
-          color={selected ? "#4f8df7" : "#b7a18a"}
+          color={
+            selected
+              ? "#d28b45"
+              : "#b7a18a"
+          }
           roughness={0.75}
         />
       </mesh>
+
+      {/* Selection outline */}
+      {selected && (
+        <mesh>
+          <boxGeometry
+            args={[
+              width * 1.08,
+              height * 1.08,
+              depth * 1.08,
+            ]}
+          />
+
+          <meshBasicMaterial
+            color="#2563eb"
+            wireframe
+          />
+        </mesh>
+      )}
     </group>
   );
 
@@ -104,127 +132,147 @@ function FurnitureObject({
         mode={transformMode}
         onMouseUp={handleTransformEnd}
       >
-        {object}
+        {furnitureGroup}
       </TransformControls>
     );
   }
 
-  return object;
+  return furnitureGroup;
+}
+
+function Room() {
+  return (
+    <group>
+      {/* Floor */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.05, 0]}
+        receiveShadow
+      >
+        <planeGeometry args={[12, 10]} />
+
+        <meshStandardMaterial
+          color="#c9a77b"
+          roughness={0.85}
+        />
+      </mesh>
+
+      {/* Back wall */}
+      <mesh
+        position={[0, 1.5, -5]}
+        receiveShadow
+      >
+        <boxGeometry args={[12, 3, 0.15]} />
+
+        <meshStandardMaterial
+          color="#eee6d8"
+          roughness={0.9}
+        />
+      </mesh>
+
+      {/* Left wall */}
+      <mesh
+        position={[-6, 1.5, 0]}
+        receiveShadow
+      >
+        <boxGeometry args={[0.15, 3, 10]} />
+
+        <meshStandardMaterial
+          color="#e2d8c8"
+          roughness={0.9}
+        />
+      </mesh>
+
+      {/* Right wall */}
+      <mesh
+        position={[6, 1.5, 0]}
+        receiveShadow
+      >
+        <boxGeometry args={[0.15, 3, 10]} />
+
+        <meshStandardMaterial
+          color="#e2d8c8"
+          roughness={0.9}
+        />
+      </mesh>
+
+      {/* Floor grid */}
+      <Grid
+        position={[0, 0.01, 0]}
+        args={[12, 10]}
+        cellSize={0.2}
+        cellThickness={0.4}
+        sectionSize={1}
+        sectionThickness={0.8}
+        fadeDistance={25}
+        infiniteGrid={false}
+      />
+    </group>
+  );
 }
 
 export default function RoomScene({
   furniture,
-  selectedId: externalSelectedId,
-  transformMode = "translate",
+  selectedId,
+  transformMode,
   onSelect,
   onTransformEnd,
 }: RoomSceneProps) {
-  const [internalSelectedId, setInternalSelectedId] =
-    useState<string | number | null>(null);
-
-  const isControlled = externalSelectedId !== undefined;
-  const selectedId = isControlled
-    ? externalSelectedId
-    : internalSelectedId;
-
-  const handleSelect = (id: string | number) => {
-    setInternalSelectedId(id);
-    onSelect?.(id);
-  };
-
-  const handleTransform = (
-    id: string | number,
-    x: number,
-    y: number,
-    rotation: number
-  ) => {
-    onTransformEnd?.(id, x, y, rotation);
-  };
-
-  useEffect(() => {
-    if (
-      selectedId !== null &&
-      !furniture.some((item) => item.id === selectedId)
-    ) {
-      setInternalSelectedId(null);
-    }
-  }, [furniture, selectedId]);
-
   return (
-    <div
+    <Canvas
+      shadows
+      camera={{
+        position: [6.5, 5.5, 8],
+        fov: 45,
+        near: 0.1,
+        far: 100,
+      }}
       style={{
         width: "100%",
         height: "100%",
-        minHeight: "600px",
         background: "#e9edf2",
-        position: "relative",
       }}
+      onPointerMissed={() => onSelect("")}
     >
-      <Canvas
-        shadows
-        camera={{
-          position: [0, 7, 11],
-          fov: 50,
-          near: 0.1,
-          far: 1000,
-        }}
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "block",
-        }}
-        onPointerMissed={() => {
-          setInternalSelectedId(null);
-        }}
-      >
-        <color attach="background" args={["#e9edf2"]} />
+      {/* Lighting */}
+      <ambientLight intensity={0.8} />
 
-        <ambientLight intensity={0.8} />
+      <directionalLight
+        position={[4, 10, 6]}
+        intensity={1.8}
+        castShadow
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+      />
 
-        <directionalLight
-          position={[5, 10, 5]}
-          intensity={1.2}
-          castShadow
-        />
+      {/* Room */}
+      <Room />
 
-        {/* Room floor */}
-        <mesh
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, -0.05, 0]}
-          receiveShadow
-        >
-          <planeGeometry args={[12, 10]} />
-          <meshStandardMaterial color="#f2eee7" />
-        </mesh>
+      {/* Furniture */}
+      {furniture
+        .filter((item) => item.visible)
+        .map((item) => (
+          <FurnitureObject
+            key={item.id}
+            item={item}
+            selected={selectedId === item.id}
+            transformMode={transformMode}
+            onSelect={onSelect}
+            onTransformEnd={onTransformEnd}
+          />
+        ))}
 
-        {/* Floor grid */}
-        <Grid
-          position={[0, 0, 0]}
-          args={[12, 10]}
-          cellSize={0.5}
-          cellThickness={0.5}
-          sectionSize={2}
-          sectionThickness={1}
-          fadeDistance={30}
-          infiniteGrid={false}
-        />
-
-        {/* Furniture */}
-        {furniture
-          .filter((item) => item.visible !== false)
-          .map((item) => (
-            <FurnitureObject
-              key={item.id}
-              item={item}
-              selected={selectedId === item.id}
-              transformMode={transformMode}
-              onSelect={handleSelect}
-              onTransformEnd={handleTransform}
-            />
-          ))}
-
-        <OrbitControls makeDefault />
-      </Canvas>
-    </div>
+      {/* Camera controls */}
+      <OrbitControls
+        makeDefault
+        target={[0, 0.5, 0]}
+        minDistance={2.5}
+        maxDistance={15}
+        minPolarAngle={0.4}
+        maxPolarAngle={Math.PI / 2.05}
+        enableDamping
+        dampingFactor={0.08}
+      />
+    </Canvas>
   );
 }

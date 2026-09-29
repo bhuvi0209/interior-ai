@@ -1,16 +1,14 @@
+
 import {
   createContext,
   useContext,
-  useState,
   useEffect,
   useRef,
+  useState,
 } from "react";
 
 import type { ReactNode } from "react";
-
-import type {
-  Project,
-} from "../types/Project";
+import type { Project } from "../types/Project";
 
 interface ProjectContextType {
   project: Project;
@@ -30,9 +28,8 @@ interface ProjectContextType {
   clearSavedProject: () => void;
 
   exportProject: () => void;
-  importProject: (
-    file: File
-  ) => Promise<void>;
+  importProject: (file: File) => Promise<void>;
+
   newProject: () => void;
 }
 
@@ -43,74 +40,84 @@ const ProjectContext =
 
 const STORAGE_KEY = "interior-ai-project";
 
+const initialProject: Project = {
+  name: "Untitled Project",
+  roomImage: "",
+  style: "",
+  furniture: [],
+};
+
 export function ProjectProvider({
   children,
 }: {
   children: ReactNode;
 }) {
- const [project, setProjectState] =
-  useState<Project>({
-    name: "Untitled Project",
-
-    roomImage: "",
-    style: "",
-
-    furniture: [],
-  });
+  const [project, setProjectState] =
+    useState<Project>(initialProject);
 
   const [past, setPast] = useState<Project[]>([]);
   const [future, setFuture] = useState<Project[]>([]);
-  const hasLoadedProject =
-  useRef(false);
-  /*
-   * Load project automatically when the app starts.
-   */
+
+  const hasLoadedProject = useRef(false);
+
+  // Load saved project when application starts
   useEffect(() => {
-  const savedProject =
-    localStorage.getItem(STORAGE_KEY);
+    const savedProject =
+      localStorage.getItem(STORAGE_KEY);
 
-  if (savedProject) {
-    try {
-      const parsedProject =
-        JSON.parse(savedProject);
+    if (savedProject) {
+      try {
+        const parsedProject =
+          JSON.parse(savedProject) as Project;
 
-      setProjectState(parsedProject);
-    } catch (error) {
-      console.error(
-        "Failed to load saved project:",
-        error
-      );
+        const loadedProject: Project = {
+          ...initialProject,
+          ...parsedProject,
+          furniture: Array.isArray(
+            parsedProject.furniture
+          )
+            ? parsedProject.furniture
+            : [],
+        };
+
+        setProjectState(loadedProject);
+      } catch (error) {
+        console.error(
+          "Failed to load saved project:",
+          error
+        );
+      }
     }
-  }
 
-  hasLoadedProject.current = true;
-}, []);
-    useEffect(() => {
-  if (!hasLoadedProject.current) {
-    return;
-  }
+    hasLoadedProject.current = true;
+  }, []);
 
-  const timeout = setTimeout(() => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(project)
-      );
-    } catch (error) {
-      console.error(
-        "Failed to automatically save project:",
-        error
-      );
+  // Automatically save project whenever it changes
+  useEffect(() => {
+    if (!hasLoadedProject.current) {
+      return;
     }
-  }, 300);
 
-  return () => {
-    clearTimeout(timeout);
-  };
-}, [project]);
-  /*
-   * Update project and store history.
-   */
+    const timeout = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(project)
+        );
+      } catch (error) {
+        console.error(
+          "Failed to automatically save project:",
+          error
+        );
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [project]);
+
+  // Update project and create undo history
   const setProject: React.Dispatch<
     React.SetStateAction<Project>
   > = (action) => {
@@ -119,6 +126,10 @@ export function ProjectProvider({
         typeof action === "function"
           ? action(currentProject)
           : action;
+
+      if (nextProject === currentProject) {
+        return currentProject;
+      }
 
       setPast((currentPast) => [
         ...currentPast,
@@ -131,9 +142,7 @@ export function ProjectProvider({
     });
   };
 
-  /*
-   * Undo
-   */
+  // Undo
   const undo = () => {
     setPast((currentPast) => {
       if (currentPast.length === 0) {
@@ -157,9 +166,7 @@ export function ProjectProvider({
     });
   };
 
-  /*
-   * Redo
-   */
+  // Redo
   const redo = () => {
     setFuture((currentFuture) => {
       if (currentFuture.length === 0) {
@@ -180,9 +187,7 @@ export function ProjectProvider({
     });
   };
 
-  /*
-   * Save project to browser storage.
-   */
+  // Save project
   const saveProject = () => {
     try {
       localStorage.setItem(
@@ -201,9 +206,7 @@ export function ProjectProvider({
     }
   };
 
-  /*
-   * Load project from browser storage.
-   */
+  // Load project
   const loadProject = () => {
     const savedProject =
       localStorage.getItem(STORAGE_KEY);
@@ -215,9 +218,19 @@ export function ProjectProvider({
 
     try {
       const parsedProject =
-        JSON.parse(savedProject);
+        JSON.parse(savedProject) as Project;
 
-      setProjectState(parsedProject);
+      const loadedProject: Project = {
+        ...initialProject,
+        ...parsedProject,
+        furniture: Array.isArray(
+          parsedProject.furniture
+        )
+          ? parsedProject.furniture
+          : [],
+      };
+
+      setProjectState(loadedProject);
 
       setPast([]);
       setFuture([]);
@@ -233,202 +246,184 @@ export function ProjectProvider({
     }
   };
 
-  /*
-   * Remove saved project.
-   */
+  // Clear saved project
   const clearSavedProject = () => {
-    localStorage.removeItem(
-      STORAGE_KEY
-    );
+    localStorage.removeItem(STORAGE_KEY);
 
     alert("Saved project cleared.");
   };
-  /*
- * Create a completely new project.
- */
-const newProject = () => {
-  const confirmed =
-    window.confirm(
-      "Start a new project? Unsaved changes will be replaced."
-    );
 
-  if (!confirmed) {
-    return;
-  }
-
-  const emptyProject: Project = {
-    name: "Untitled Project",
-
-    roomImage: "",
-    style: "",
-
-    furniture: [],
-  };
-
-  setProjectState(
-    emptyProject
-  );
-
-  setPast([]);
-  setFuture([]);
-
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify(
-      emptyProject
-    )
-  );
-};
-/*
- * Export project as a JSON file.
- */
-const exportProject = () => {
-  try {
-    const projectData =
-      JSON.stringify(
-        project,
-        null,
-        2
+  // New project
+  const newProject = () => {
+    const confirmed =
+      window.confirm(
+        "Start a new project? Unsaved changes will be replaced."
       );
 
-    const blob = new Blob(
-      [projectData],
-      {
-        type: "application/json",
-      }
-    );
-
-    const url =
-      URL.createObjectURL(blob);
-
-    const link =
-      document.createElement("a");
-
-    link.href = url;
-
-    link.download =
-      "interior-ai-project.json";
-
-    document.body.appendChild(link);
-
-    link.click();
-
-    document.body.removeChild(link);
-
-    URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error(
-      "Failed to export project:",
-      error
-    );
-
-    alert(
-      "Failed to export project."
-    );
-  }
-};
-/*
- * Import project from a JSON file.
- */
-const importProject = async (
-  file: File
-) => {
-  try {
-    const text =
-      await file.text();
-
-    const importedProject =
-      JSON.parse(text) as Project;
-    if (
-  !importedProject.name
-) {
-  importedProject.name =
-    "Imported Project";
-}
-    /*
-     * Basic validation.
-     */
-    if (
-      !importedProject ||
-      typeof importedProject !==
-        "object"
-    ) {
-      throw new Error(
-        "Invalid project file."
-      );
+    if (!confirmed) {
+      return;
     }
 
-    if (
-      !Array.isArray(
-        importedProject.furniture
-      )
-    ) {
-      throw new Error(
-        "Invalid furniture data."
-      );
-    }
+    const emptyProject: Project = {
+      name: "Untitled Project",
+      roomImage: "",
+      style: "",
+      furniture: [],
+    };
 
-    /*
-     * Update project.
-     */
-    setProjectState(
-      importedProject
-    );
+    setProjectState(emptyProject);
 
-    /*
-     * Clear undo/redo history
-     * because this is a new project state.
-     */
     setPast([]);
     setFuture([]);
 
-    /*
-     * Also save the imported project
-     * into localStorage.
-     */
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify(
+      JSON.stringify(emptyProject)
+    );
+  };
+
+  // Export project
+  const exportProject = () => {
+    try {
+      const projectData =
+        JSON.stringify(
+          project,
+          null,
+          2
+        );
+
+      const blob =
+        new Blob(
+          [projectData],
+          {
+            type: "application/json",
+          }
+        );
+
+      const url =
+        URL.createObjectURL(blob);
+
+      const link =
+        document.createElement("a");
+
+      link.href = url;
+
+      link.download =
+        "interior-ai-project.json";
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(
+        "Failed to export project:",
+        error
+      );
+
+      alert(
+        "Failed to export project."
+      );
+    }
+  };
+
+  // Import project
+  const importProject = async (
+    file: File
+  ) => {
+    try {
+      const text =
+        await file.text();
+
+      const parsedProject =
+        JSON.parse(text) as Project;
+
+      if (
+        !parsedProject ||
+        typeof parsedProject !== "object"
+      ) {
+        throw new Error(
+          "Invalid project file."
+        );
+      }
+
+      if (
+        !Array.isArray(
+          parsedProject.furniture
+        )
+      ) {
+        throw new Error(
+          "Invalid furniture data."
+        );
+      }
+
+      const importedProject: Project = {
+        ...initialProject,
+        ...parsedProject,
+        name:
+          parsedProject.name ||
+          "Imported Project",
+        furniture:
+          parsedProject.furniture,
+      };
+
+      setProjectState(
         importedProject
-      )
-    );
+      );
 
-    alert(
-      "Project imported successfully!"
-    );
-  } catch (error) {
-    console.error(
-      "Failed to import project:",
-      error
-    );
+      setPast([]);
+      setFuture([]);
 
-    alert(
-      "Invalid project file."
-    );
-  }
-};
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(
+          importedProject
+        )
+      );
+
+      alert(
+        "Project imported successfully!"
+      );
+    } catch (error) {
+      console.error(
+        "Failed to import project:",
+        error
+      );
+
+      alert(
+        "Invalid project file."
+      );
+    }
+  };
+
   return (
     <ProjectContext.Provider
-  value={{
-    project,
-    setProject,
+      value={{
+        project,
+        setProject,
 
-    undo,
-    redo,
+        undo,
+        redo,
 
-    canUndo: past.length > 0,
-    canRedo: future.length > 0,
+        canUndo:
+          past.length > 0,
 
-    saveProject,
-    loadProject,
-    clearSavedProject,
+        canRedo:
+          future.length > 0,
 
-    exportProject,
-    importProject,
+        saveProject,
+        loadProject,
+        clearSavedProject,
 
-    newProject,
-  }}
->
+        exportProject,
+        importProject,
+
+        newProject,
+      }}
+    >
       {children}
     </ProjectContext.Provider>
   );
@@ -446,3 +441,4 @@ export function useProject() {
 
   return context;
 }
+

@@ -1,16 +1,18 @@
-
 import { useState } from "react";
 import RoomScene from "../3d/RoomScene";
 import { useProject } from "../context/ProjectContext";
 
+type TransformMode = "translate" | "rotate";
+
 export default function ThreeDView() {
   const { project, setProject } = useProject();
 
-  const [selectedId, setSelectedId] =
-    useState<string | number | null>(null);
+  const [selectedId, setSelectedId] = useState<string | number | null>(
+    null
+  );
 
   const [transformMode, setTransformMode] =
-    useState<"translate" | "rotate">("translate");
+    useState<TransformMode>("translate");
 
   const handleTransformEnd = (
     id: string | number,
@@ -18,13 +20,21 @@ export default function ThreeDView() {
     y: number,
     rotation: number
   ) => {
-    setProject((previousProject) => ({
-      ...previousProject,
-      furniture: previousProject.furniture.map((item) =>
-        item.id === id
-          ? { ...item, x, y, rotation }
-          : item
-      ),
+    setProject((currentProject) => ({
+      ...currentProject,
+
+      furniture: currentProject.furniture.map((item) => {
+        if (item.id !== id) {
+          return item;
+        }
+
+        return {
+          ...item,
+          x,
+          y,
+          rotation,
+        };
+      }),
     }));
   };
 
@@ -32,33 +42,109 @@ export default function ThreeDView() {
     <div
       style={{
         width: "100%",
-        minHeight: "100vh",
+        height: "100vh",
         display: "flex",
         flexDirection: "column",
+        overflow: "hidden",
       }}
     >
       <div
         style={{
+          height: "60px",
+          flexShrink: 0,
           display: "flex",
-          gap: "10px",
-          padding: "12px",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 20px",
           background: "#ffffff",
+          borderBottom: "1px solid #ddd",
+          boxSizing: "border-box",
         }}
       >
-        <button onClick={() => setTransformMode("translate")}>
-          Move
-        </button>
+        <div>
+          <h2
+            style={{
+              margin: 0,
+              fontSize: "20px",
+            }}
+          >
+            {project.name || "Untitled Project"}
+          </h2>
 
-        <button onClick={() => setTransformMode("rotate")}>
-          Rotate
-        </button>
+          <span
+            style={{
+              fontSize: "13px",
+              color: "#666",
+            }}
+          >
+            3D Room View
+          </span>
+        </div>
 
-        <button onClick={() => setSelectedId(null)}>
-          Deselect
-        </button>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          <button
+            onClick={() => setTransformMode("translate")}
+            style={{
+              padding: "8px 14px",
+              cursor: "pointer",
+              border: "1px solid #ccc",
+              borderRadius: "6px",
+              background:
+                transformMode === "translate" ? "#2563eb" : "#fff",
+              color:
+                transformMode === "translate" ? "#fff" : "#333",
+            }}
+          >
+            Move
+          </button>
+
+          <button
+            onClick={() => setTransformMode("rotate")}
+            style={{
+              padding: "8px 14px",
+              cursor: "pointer",
+              border: "1px solid #ccc",
+              borderRadius: "6px",
+              background:
+                transformMode === "rotate" ? "#2563eb" : "#fff",
+              color:
+                transformMode === "rotate" ? "#fff" : "#333",
+            }}
+          >
+            Rotate
+          </button>
+
+          <button
+            onClick={() => setSelectedId(null)}
+            style={{
+              padding: "8px 14px",
+              cursor: "pointer",
+              border: "1px solid #ccc",
+              borderRadius: "6px",
+              background: "#fff",
+              color: "#333",
+            }}
+          >
+            Deselect
+          </button>
+        </div>
       </div>
 
-      <div style={{ flex: 1, minHeight: "600px" }}>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          width: "100%",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
         <RoomScene
           furniture={project.furniture}
           selectedId={selectedId}

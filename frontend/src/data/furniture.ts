@@ -38,6 +38,7 @@ export const furnitureItems:
     name: "Chair",
     category: "Living Room",
     emoji: "🪑",
+    model3D: "/models/chair.glb",
     defaultScale: 1,
     width: 0.8,
     depth: 0.8,
