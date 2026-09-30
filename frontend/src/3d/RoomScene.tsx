@@ -4,9 +4,10 @@ import {
   OrbitControls,
   TransformControls,
 } from "@react-three/drei";
-import { useRef } from "react";
+import { Suspense, useRef } from "react";
 import type { Group } from "three";
 import type { FurnitureItem } from "../types/Project";
+import FurnitureModel from "./FurnitureModel";
 
 interface RoomSceneProps {
   furniture: FurnitureItem[];
@@ -43,17 +44,13 @@ function FurnitureObject({
 }: FurnitureObjectProps) {
   const groupRef = useRef<Group>(null);
 
-  // Convert 2D editor coordinates to 3D coordinates.
   const positionX = (item.x - 400) / 100;
   const positionZ = (item.y - 250) / 100;
 
-  const width = (item.width ?? 100) / 100;
-  const depth = (item.depth ?? 100) / 100;
-  const height = (item.height ?? 100) / 100;
-
-  const furnitureScale = item.scale || 1;
-
   const rotationY = ((item.rotation ?? 0) * Math.PI) / 180;
+
+  const furnitureHeight =
+  ((item.height ?? 100) / 100) * (item.scale ?? 1);
 
   const handleTransformEnd = () => {
     const group = groupRef.current;
@@ -64,6 +61,7 @@ function FurnitureObject({
 
     const updatedX = 400 + group.position.x * 100;
     const updatedY = 250 + group.position.z * 100;
+
     const updatedRotation =
       (group.rotation.y * 180) / Math.PI;
 
@@ -80,46 +78,57 @@ function FurnitureObject({
       ref={groupRef}
       position={[
         positionX,
-        (height * furnitureScale) / 2,
+        item.model3D ? 0 : furnitureHeight / 2,
         positionZ,
       ]}
       rotation={[0, rotationY, 0]}
-      scale={furnitureScale}
+      scale={item.scale}
       onClick={(event) => {
         event.stopPropagation();
         onSelect(item.id);
       }}
     >
-      {/* Temporary furniture representation */}
-      <mesh castShadow receiveShadow>
-        <boxGeometry
-          args={[width, height, depth]}
+      {item.model3D ? (
+        <FurnitureModel
+          modelPath={item.model3D}
+          width={item.width}
+          depth={item.depth}
+          height={item.height}
         />
-
-        <meshStandardMaterial
-          color={
-            selected
-              ? "#d28b45"
-              : "#b7a18a"
-          }
-          roughness={0.75}
-        />
-      </mesh>
-
-      {/* Selection outline */}
-      {selected && (
-        <mesh>
+      ) : (
+        <mesh castShadow receiveShadow>
           <boxGeometry
             args={[
-              width * 1.08,
-              height * 1.08,
-              depth * 1.08,
+              (item.width ?? 100) / 100,
+              (item.height ?? 100) / 100,
+              (item.depth ?? 100) / 100,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={selected ? "#d89b55" : "#b7a18a"}
+            roughness={0.75}
+          />
+        </mesh>
+      )}
+
+      {selected && (
+        <mesh
+          position={[0, furnitureHeight / 2, 0]}
+        >
+          <boxGeometry
+            args={[
+              ((item.width ?? 100) / 100) + 0.08,
+              furnitureHeight + 0.08,
+              ((item.depth ?? 100) / 100) + 0.08,
             ]}
           />
 
           <meshBasicMaterial
-            color="#2563eb"
+            color="#4da6ff"
             wireframe
+            transparent
+            opacity={0.8}
           />
         </mesh>
       )}
@@ -222,24 +231,22 @@ export default function RoomScene({
     <Canvas
       shadows
       camera={{
-        position: [6.5, 5.5, 8],
-        fov: 45,
-        near: 0.1,
-        far: 100,
+        position: [8, 7, 11],
+        fov: 50,
       }}
       style={{
         width: "100%",
         height: "100%",
         background: "#e9edf2",
       }}
-      onPointerMissed={() => onSelect("")}
     >
-      {/* Lighting */}
-      <ambientLight intensity={0.8} />
+      {/* Ambient lighting */}
+      <ambientLight intensity={0.65} />
 
+      {/* Main light */}
       <directionalLight
-        position={[4, 10, 6]}
-        intensity={1.8}
+        position={[5, 10, 5]}
+        intensity={1.5}
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
@@ -249,29 +256,28 @@ export default function RoomScene({
       <Room />
 
       {/* Furniture */}
-      {furniture
-        .filter((item) => item.visible)
-        .map((item) => (
-          <FurnitureObject
-            key={item.id}
-            item={item}
-            selected={selectedId === item.id}
-            transformMode={transformMode}
-            onSelect={onSelect}
-            onTransformEnd={onTransformEnd}
-          />
-        ))}
+      <Suspense fallback={null}>
+        {furniture
+          .filter((item) => item.visible)
+          .map((item) => (
+            <FurnitureObject
+              key={item.id}
+              item={item}
+              selected={selectedId === item.id}
+              transformMode={transformMode}
+              onSelect={onSelect}
+              onTransformEnd={onTransformEnd}
+            />
+          ))}
+      </Suspense>
 
       {/* Camera controls */}
       <OrbitControls
         makeDefault
-        target={[0, 0.5, 0]}
-        minDistance={2.5}
-        maxDistance={15}
-        minPolarAngle={0.4}
-        maxPolarAngle={Math.PI / 2.05}
-        enableDamping
-        dampingFactor={0.08}
+        target={[0, 1, 0]}
+        minDistance={3}
+        maxDistance={20}
+        maxPolarAngle={Math.PI / 2}
       />
     </Canvas>
   );
