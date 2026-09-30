@@ -1,4 +1,4 @@
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import {
   Grid,
   OrbitControls,
@@ -13,6 +13,7 @@ interface RoomSceneProps {
   furniture: FurnitureItem[];
   selectedId: string | number | null;
   transformMode: "translate" | "rotate";
+  cameraView: "perspective" | "top" | "front";
   onSelect: (id: string | number) => void;
   onTransformEnd: (
     id: string | number,
@@ -47,10 +48,12 @@ function FurnitureObject({
   const positionX = (item.x - 400) / 100;
   const positionZ = (item.y - 250) / 100;
 
-  const rotationY = ((item.rotation ?? 0) * Math.PI) / 180;
+  const rotationY =
+  ((item.rotation ?? 0) * Math.PI) / 180;
 
   const furnitureHeight =
-  ((item.height ?? 100) / 100) * (item.scale ?? 1);
+  ((item.height ?? 100) / 100) *
+  (item.scale ?? 1);
 
   const handleTransformEnd = () => {
     const group = groupRef.current;
@@ -113,9 +116,7 @@ function FurnitureObject({
       )}
 
       {selected && (
-        <mesh
-          position={[0, furnitureHeight / 2, 0]}
-        >
+        <mesh position={[0, furnitureHeight / 2, 0]}>
           <boxGeometry
             args={[
               ((item.width ?? 100) / 100) + 0.08,
@@ -167,10 +168,7 @@ function Room() {
       </mesh>
 
       {/* Back wall */}
-      <mesh
-        position={[0, 1.5, -5]}
-        receiveShadow
-      >
+      <mesh position={[0, 1.5, -5]} receiveShadow>
         <boxGeometry args={[12, 3, 0.15]} />
 
         <meshStandardMaterial
@@ -180,10 +178,7 @@ function Room() {
       </mesh>
 
       {/* Left wall */}
-      <mesh
-        position={[-6, 1.5, 0]}
-        receiveShadow
-      >
+      <mesh position={[-6, 1.5, 0]} receiveShadow>
         <boxGeometry args={[0.15, 3, 10]} />
 
         <meshStandardMaterial
@@ -193,10 +188,7 @@ function Room() {
       </mesh>
 
       {/* Right wall */}
-      <mesh
-        position={[6, 1.5, 0]}
-        receiveShadow
-      >
+      <mesh position={[6, 1.5, 0]} receiveShadow>
         <boxGeometry args={[0.15, 3, 10]} />
 
         <meshStandardMaterial
@@ -220,10 +212,32 @@ function Room() {
   );
 }
 
+function CameraController({
+  cameraView,
+}: {
+  cameraView: "perspective" | "top" | "front";
+}) {
+  const { camera } = useThree();
+
+  if (cameraView === "top") {
+    camera.position.set(0, 12, 0);
+    camera.lookAt(0, 0, 0);
+  } else if (cameraView === "front") {
+    camera.position.set(0, 3, 12);
+    camera.lookAt(0, 1, 0);
+  } else {
+    camera.position.set(8, 7, 11);
+    camera.lookAt(0, 1, 0);
+  }
+
+  return null;
+}
+
 export default function RoomScene({
   furniture,
   selectedId,
   transformMode,
+  cameraView,
   onSelect,
   onTransformEnd,
 }: RoomSceneProps) {
@@ -240,10 +254,11 @@ export default function RoomScene({
         background: "#e9edf2",
       }}
     >
-      {/* Ambient lighting */}
+      <CameraController cameraView={cameraView} />
+
+      {/* Lighting */}
       <ambientLight intensity={0.65} />
 
-      {/* Main light */}
       <directionalLight
         position={[5, 10, 5]}
         intensity={1.5}
