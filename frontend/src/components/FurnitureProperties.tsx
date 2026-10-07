@@ -1,14 +1,15 @@
+import type { FurnitureItem } from "../types/Project";
 import { useProject } from "../context/ProjectContext";
 
-type Props = {
+interface FurniturePropertiesProps {
   selectedId: string | number | null;
   onClose: () => void;
-};
+}
 
 export default function FurnitureProperties({
   selectedId,
   onClose,
-}: Props) {
+}: FurniturePropertiesProps) {
   const { project, setProject } = useProject();
 
   const furniture = project.furniture.find(
@@ -20,460 +21,547 @@ export default function FurnitureProperties({
   }
 
   const updateFurniture = (
-    changes: Partial<typeof furniture>
+    updates: Partial<FurnitureItem>
   ) => {
-    setProject((currentProject) => ({
-      ...currentProject,
-      furniture: currentProject.furniture.map((item) =>
-        item.id === selectedId
-          ? { ...item, ...changes }
+    setProject((current) => ({
+      ...current,
+      furniture: current.furniture.map((item) =>
+        item.id === furniture.id
+          ? {
+              ...item,
+              ...updates,
+            }
           : item
       ),
     }));
   };
 
-  const duplicateFurniture = () => {
-    const newFurniture = {
-      ...furniture,
-      id: Date.now(),
-      x: furniture.x + 40,
-      y: furniture.y + 40,
-    };
+  const updateNumber = (
+    field:
+      | "x"
+      | "y"
+      | "rotation"
+      | "scale"
+      | "width"
+      | "depth"
+      | "height",
+    value: string
+  ) => {
+    const numberValue = Number(value);
 
-    setProject((currentProject) => ({
-      ...currentProject,
-      furniture: [
-        ...currentProject.furniture,
-        newFurniture,
-      ],
-    }));
+    if (Number.isNaN(numberValue)) {
+      return;
+    }
+
+    updateFurniture({
+      [field]: numberValue,
+    });
   };
 
-  const deleteFurniture = () => {
-    setProject((currentProject) => ({
-      ...currentProject,
-      furniture: currentProject.furniture.filter(
-        (item) => item.id !== selectedId
+  const handleDelete = () => {
+    setProject((current) => ({
+      ...current,
+      furniture: current.furniture.filter(
+        (item) => item.id !== furniture.id
       ),
     }));
 
     onClose();
   };
-  const toggleVisibility = () => {
-  updateFurniture({
-    visible: !furniture.visible,
-  });
-};
-const toggleLock = () => {
-  updateFurniture({
-    locked: !furniture.locked,
-  });
-};
-const bringForward = () => {
-  setProject((currentProject) => {
-    const index =
-      currentProject.furniture.findIndex(
-        (item) => item.id === selectedId
-      );
 
-    if (
-      index === -1 ||
-      index === currentProject.furniture.length - 1
-    ) {
-      return currentProject;
-    }
-
-    const furniture = [
-      ...currentProject.furniture,
-    ];
-
-    const current = furniture[index];
-    const next = furniture[index + 1];
-
-    furniture[index] = next;
-    furniture[index + 1] = current;
-
-    return {
-      ...currentProject,
-      furniture,
+  const handleDuplicate = () => {
+    const duplicate: FurnitureItem = {
+      ...furniture,
+      id: `${furniture.id}-copy-${Date.now()}`,
+      x: furniture.x + 40,
+      y: furniture.y + 40,
+      locked: false,
+      visible: true,
     };
-  });
-};
-const sendBackward = () => {
-  setProject((currentProject) => {
-    const index =
-      currentProject.furniture.findIndex(
-        (item) => item.id === selectedId
-      );
 
-    if (index <= 0) {
-      return currentProject;
+    setProject((current) => ({
+      ...current,
+      furniture: [...current.furniture, duplicate],
+    }));
+  };
+
+  const handleToggleLock = () => {
+    updateFurniture({
+      locked: !furniture.locked,
+    });
+  };
+
+  const handleToggleVisibility = () => {
+    const newVisible = !furniture.visible;
+
+    updateFurniture({
+      visible: newVisible,
+    });
+
+    if (!newVisible) {
+      onClose();
     }
+  };
 
-    const furniture = [
-      ...currentProject.furniture,
-    ];
-
-    const current = furniture[index];
-    const previous = furniture[index - 1];
-
-    furniture[index] = previous;
-    furniture[index - 1] = current;
-
-    return {
-      ...currentProject,
-      furniture,
-    };
-  });
-};
-const bringToFront = () => {
-  setProject((currentProject) => {
-    const selected =
-      currentProject.furniture.find(
-        (item) => item.id === selectedId
-      );
-
-    if (!selected) {
-      return currentProject;
-    }
-
-    const remaining =
-      currentProject.furniture.filter(
-        (item) => item.id !== selectedId
-      );
-
-    return {
-      ...currentProject,
-
-      furniture: [
-        ...remaining,
-        selected,
-      ],
-    };
-  });
-};
-const sendToBack = () => {
-  setProject((currentProject) => {
-    const selected =
-      currentProject.furniture.find(
-        (item) => item.id === selectedId
-      );
-
-    if (!selected) {
-      return currentProject;
-    }
-
-    const remaining =
-      currentProject.furniture.filter(
-        (item) => item.id !== selectedId
-      );
-
-    return {
-      ...currentProject,
-
-      furniture: [
-        selected,
-        ...remaining,
-      ],
-    };
-  });
-};
   return (
     <div
       style={{
-        width: "280px",
-        padding: "20px",
-        background: "#ffffff",
-        borderLeft: "1px solid #ddd",
-        height: "100%",
+        width: "100%",
         boxSizing: "border-box",
-        overflowY: "auto",
       }}
     >
+      {/* HEADER */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "20px",
+          marginBottom: "18px",
         }}
       >
-        <h2 style={{ margin: 0 }}>
+        <h3
+          style={{
+            margin: 0,
+            fontSize: "18px",
+          }}
+        >
           Furniture Properties
-        </h2>
+        </h3>
 
         <button
-          type="button"
           onClick={onClose}
+          style={{
+            border: "none",
+            background: "transparent",
+            fontSize: "18px",
+            cursor: "pointer",
+          }}
+          title="Close"
         >
-          ✕
+          ×
         </button>
       </div>
 
-      <h3>{furniture.name}</h3>
+      {/* NAME */}
+      <div style={{ marginBottom: "16px" }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: "13px",
+            fontWeight: 600,
+            marginBottom: "6px",
+          }}
+        >
+          Name
+        </label>
 
-      <p
+        <input
+          type="text"
+          value={furniture.name}
+          onChange={(event) =>
+            updateFurniture({
+              name: event.target.value,
+            })
+          }
+          disabled={furniture.locked}
+          style={{
+            width: "100%",
+            padding: "8px",
+            boxSizing: "border-box",
+          }}
+        />
+      </div>
+
+      {/* CATEGORY */}
+      <div style={{ marginBottom: "16px" }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: "13px",
+            fontWeight: 600,
+            marginBottom: "6px",
+          }}
+        >
+          Category
+        </label>
+
+        <input
+          type="text"
+          value={furniture.category}
+          onChange={(event) =>
+            updateFurniture({
+              category: event.target.value,
+            })
+          }
+          disabled={furniture.locked}
+          style={{
+            width: "100%",
+            padding: "8px",
+            boxSizing: "border-box",
+          }}
+        />
+      </div>
+
+      {/* POSITION */}
+      <div
         style={{
-          color: "#666",
-          fontSize: "14px",
+          borderTop: "1px solid #ddd",
+          paddingTop: "16px",
+          marginBottom: "16px",
         }}
       >
-        Category: {furniture.category}
-      </p>
+        <h4
+          style={{
+            margin: "0 0 12px",
+            fontSize: "14px",
+          }}
+        >
+          Position
+        </h4>
 
-      <label>X Position</label>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "10px",
+          }}
+        >
+          {/* X */}
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontSize: "12px",
+                marginBottom: "4px",
+              }}
+            >
+              X
+            </label>
 
-      <input
-        type="number"
-        value={Math.round(furniture.x)}
-        onChange={(event) =>
-          updateFurniture({
-            x: Number(event.target.value),
-          })
-        }
+            <input
+              type="number"
+              value={furniture.x}
+              onChange={(event) =>
+                updateNumber("x", event.target.value)
+              }
+              disabled={furniture.locked}
+              style={{
+                width: "100%",
+                padding: "7px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          {/* Y */}
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontSize: "12px",
+                marginBottom: "4px",
+              }}
+            >
+              Y
+            </label>
+
+            <input
+              type="number"
+              value={furniture.y}
+              onChange={(event) =>
+                updateNumber("y", event.target.value)
+              }
+              disabled={furniture.locked}
+              style={{
+                width: "100%",
+                padding: "7px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ROTATION */}
+      <div
         style={{
-          width: "100%",
-          marginTop: "5px",
-          marginBottom: "15px",
-          padding: "8px",
-          boxSizing: "border-box",
-        }}
-      />
-
-      <label>Y Position</label>
-
-      <input
-        type="number"
-        value={Math.round(furniture.y)}
-        onChange={(event) =>
-          updateFurniture({
-            y: Number(event.target.value),
-          })
-        }
-        style={{
-          width: "100%",
-          marginTop: "5px",
-          marginBottom: "15px",
-          padding: "8px",
-          boxSizing: "border-box",
-        }}
-      />
-
-      <label>Rotation</label>
-
-      <input
-        type="number"
-        value={Math.round(furniture.rotation ?? 0)}
-        onChange={(event) =>
-          updateFurniture({
-            rotation: Number(event.target.value),
-          })
-        }
-        style={{
-          width: "100%",
-          marginTop: "5px",
-          marginBottom: "15px",
-          padding: "8px",
-          boxSizing: "border-box",
-        }}
-      />
-
-      <label>Scale</label>
-
-      <input
-        type="number"
-        step="0.1"
-        min="0.5"
-        max="2.5"
-        value={furniture.scale ?? 1}
-        onChange={(event) =>
-          updateFurniture({
-            scale: Number(event.target.value),
-          })
-        }
-        style={{
-          width: "100%",
-          marginTop: "5px",
-          marginBottom: "15px",
-          padding: "8px",
-          boxSizing: "border-box",
-        }}
-      />
-
-      <label>Width</label>
-
-      <input
-        type="number"
-        value={furniture.width ?? ""}
-        onChange={(event) =>
-          updateFurniture({
-            width: Number(event.target.value),
-          })
-        }
-        style={{
-          width: "100%",
-          marginTop: "5px",
-          marginBottom: "15px",
-          padding: "8px",
-          boxSizing: "border-box",
-        }}
-      />
-
-      <label>Depth</label>
-
-      <input
-        type="number"
-        value={furniture.depth ?? ""}
-        onChange={(event) =>
-          updateFurniture({
-            depth: Number(event.target.value),
-          })
-        }
-        style={{
-          width: "100%",
-          marginTop: "5px",
-          marginBottom: "15px",
-          padding: "8px",
-          boxSizing: "border-box",
-        }}
-      />
-
-      <label>Height</label>
-
-      <input
-        type="number"
-        value={furniture.height ?? ""}
-        onChange={(event) =>
-          updateFurniture({
-            height: Number(event.target.value),
-          })
-        }
-        style={{
-          width: "100%",
-          marginTop: "5px",
-          marginBottom: "20px",
-          padding: "8px",
-          boxSizing: "border-box",
-        }}
-      />
-
-      <button
-        type="button"
-        onClick={duplicateFurniture}
-        style={{
-          width: "100%",
-          padding: "10px",
-          marginBottom: "10px",
-          cursor: "pointer",
+          borderTop: "1px solid #ddd",
+          paddingTop: "16px",
+          marginBottom: "16px",
         }}
       >
-        📋 Duplicate
-      </button>
-        {/* Layer Controls */}
+        <h4
+          style={{
+            margin: "0 0 12px",
+            fontSize: "14px",
+          }}
+        >
+          Rotation
+        </h4>
 
-<div
-  style={{
-    marginTop: "10px",
-    marginBottom: "20px",
-    paddingTop: "15px",
-    borderTop: "1px solid #ddd",
-  }}
->
-  <h3
-    style={{
-      marginBottom: "12px",
-    }}
-  >
-    Layer Controls
-  </h3>
+        <label
+          style={{
+            display: "block",
+            fontSize: "12px",
+            marginBottom: "4px",
+          }}
+        >
+          Degrees
+        </label>
 
-  <button
-    onClick={toggleVisibility}
-    style={{
-      width: "100%",
-      padding: "10px",
-      marginBottom: "8px",
-      cursor: "pointer",
-    }}
-  >
-    {furniture.visible
-      ? "👁️ Hide Furniture"
-      : "👁️ Show Furniture"}
-  </button>
+        <input
+          type="number"
+          value={furniture.rotation}
+          onChange={(event) =>
+            updateNumber("rotation", event.target.value)
+          }
+          disabled={furniture.locked}
+          style={{
+            width: "100%",
+            padding: "7px",
+            boxSizing: "border-box",
+          }}
+        />
+      </div>
 
-  <button
-    onClick={toggleLock}
-    style={{
-      width: "100%",
-      padding: "10px",
-      marginBottom: "12px",
-      cursor: "pointer",
-    }}
-  >
-    {furniture.locked
-      ? "🔒 Unlock Furniture"
-      : "🔓 Lock Furniture"}
-  </button>
-
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: "8px",
-    }}
-  >
-    <button
-      onClick={bringForward}
-      style={{
-        padding: "8px",
-        cursor: "pointer",
-      }}
-    >
-      ⬆️ Forward
-    </button>
-
-    <button
-      onClick={sendBackward}
-      style={{
-        padding: "8px",
-        cursor: "pointer",
-      }}
-    >
-      ⬇️ Backward
-    </button>
-
-    <button
-      onClick={bringToFront}
-      style={{
-        padding: "8px",
-        cursor: "pointer",
-      }}
-    >
-      ⬆️ Front
-    </button>
-
-    <button
-      onClick={sendToBack}
-      style={{
-        padding: "8px",
-        cursor: "pointer",
-      }}
-    >
-      ⬇️ Back
-    </button>
-  </div>
-</div>
-      <button
-        type="button"
-        onClick={deleteFurniture}
+      {/* SCALE */}
+      <div
         style={{
-          width: "100%",
-          padding: "10px",
-          cursor: "pointer",
+          borderTop: "1px solid #ddd",
+          paddingTop: "16px",
+          marginBottom: "16px",
         }}
       >
-        🗑️ Delete Furniture
-      </button>
+        <h4
+          style={{
+            margin: "0 0 12px",
+            fontSize: "14px",
+          }}
+        >
+          Scale
+        </h4>
+
+        <input
+          type="number"
+          min="0.1"
+          step="0.1"
+          value={furniture.scale}
+          onChange={(event) =>
+            updateNumber("scale", event.target.value)
+          }
+          disabled={furniture.locked}
+          style={{
+            width: "100%",
+            padding: "7px",
+            boxSizing: "border-box",
+          }}
+        />
+      </div>
+
+      {/* DIMENSIONS */}
+      <div
+        style={{
+          borderTop: "1px solid #ddd",
+          paddingTop: "16px",
+          marginBottom: "16px",
+        }}
+      >
+        <h4
+          style={{
+            margin: "0 0 12px",
+            fontSize: "14px",
+          }}
+        >
+          Dimensions
+        </h4>
+
+        {/* WIDTH */}
+        <div style={{ marginBottom: "10px" }}>
+          <label
+            style={{
+              display: "block",
+              fontSize: "12px",
+              marginBottom: "4px",
+            }}
+          >
+            Width
+          </label>
+
+          <input
+            type="number"
+            min="1"
+            value={furniture.width ?? 100}
+            onChange={(event) =>
+              updateNumber("width", event.target.value)
+            }
+            disabled={furniture.locked}
+            style={{
+              width: "100%",
+              padding: "7px",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        {/* DEPTH */}
+        <div style={{ marginBottom: "10px" }}>
+          <label
+            style={{
+              display: "block",
+              fontSize: "12px",
+              marginBottom: "4px",
+            }}
+          >
+            Depth
+          </label>
+
+          <input
+            type="number"
+            min="1"
+            value={furniture.depth ?? 100}
+            onChange={(event) =>
+              updateNumber("depth", event.target.value)
+            }
+            disabled={furniture.locked}
+            style={{
+              width: "100%",
+              padding: "7px",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        {/* HEIGHT */}
+        <div>
+          <label
+            style={{
+              display: "block",
+              fontSize: "12px",
+              marginBottom: "4px",
+            }}
+          >
+            Height
+          </label>
+
+          <input
+            type="number"
+            min="1"
+            value={furniture.height ?? 100}
+            onChange={(event) =>
+              updateNumber("height", event.target.value)
+            }
+            disabled={furniture.locked}
+            style={{
+              width: "100%",
+              padding: "7px",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* STATUS */}
+      <div
+        style={{
+          borderTop: "1px solid #ddd",
+          paddingTop: "16px",
+          marginBottom: "16px",
+        }}
+      >
+        <h4
+          style={{
+            margin: "0 0 10px",
+            fontSize: "14px",
+          }}
+        >
+          Status
+        </h4>
+
+        <div
+          style={{
+            fontSize: "13px",
+            lineHeight: 1.7,
+          }}
+        >
+          <div>
+            Locked: {furniture.locked ? "Yes" : "No"}
+          </div>
+
+          <div>
+            Visible: {furniture.visible ? "Yes" : "No"}
+          </div>
+        </div>
+      </div>
+
+      {/* ACTIONS */}
+      <div
+        style={{
+          borderTop: "1px solid #ddd",
+          paddingTop: "16px",
+        }}
+      >
+        <h4
+          style={{
+            margin: "0 0 12px",
+            fontSize: "14px",
+          }}
+        >
+          Actions
+        </h4>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          }}
+        >
+          <button
+            onClick={handleToggleLock}
+            style={{
+              padding: "9px",
+              cursor: "pointer",
+            }}
+          >
+            {furniture.locked
+              ? "Unlock Furniture"
+              : "Lock Furniture"}
+          </button>
+
+          <button
+            onClick={handleToggleVisibility}
+            style={{
+              padding: "9px",
+              cursor: "pointer",
+            }}
+          >
+            {furniture.visible
+              ? "Hide Furniture"
+              : "Show Furniture"}
+          </button>
+
+          <button
+            onClick={handleDuplicate}
+            style={{
+              padding: "9px",
+              cursor: "pointer",
+            }}
+          >
+            Duplicate Furniture
+          </button>
+
+          <button
+            onClick={handleDelete}
+            style={{
+              padding: "9px",
+              cursor: "pointer",
+              color: "#b00020",
+            }}
+          >
+            Delete Furniture
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
