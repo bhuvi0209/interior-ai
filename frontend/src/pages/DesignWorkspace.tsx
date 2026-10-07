@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Editor from "./Editor";
+import FurnitureProperties from "../components/FurnitureProperties";
 import RoomScene from "../3d/RoomScene";
 import { useProject } from "../context/ProjectContext";
 
@@ -11,16 +12,20 @@ export default function DesignWorkspace() {
   const { project, setProject } = useProject();
 
   const [viewMode, setViewMode] = useState<ViewMode>("2D");
-
-  const [selectedId, setSelectedId] = useState<
-    string | number | null
-  >(null);
-
+  const [selectedId, setSelectedId] = useState<string | number | null>(null);
   const [transformMode, setTransformMode] =
     useState<TransformMode>("translate");
 
   const [cameraView, setCameraView] =
     useState<CameraView>("perspective");
+
+  const selectedFurniture = project.furniture.find(
+    (item) => item.id === selectedId
+  );
+
+  // --------------------------------------------------
+  // 3D TRANSFORM UPDATE
+  // --------------------------------------------------
 
   const handleTransformEnd = (
     id: string | number,
@@ -28,9 +33,9 @@ export default function DesignWorkspace() {
     y: number,
     rotation: number
   ) => {
-    setProject((previousProject) => ({
-      ...previousProject,
-      furniture: previousProject.furniture.map((item) =>
+    setProject((current) => ({
+      ...current,
+      furniture: current.furniture.map((item) =>
         item.id === id
           ? {
               ...item,
@@ -43,227 +48,373 @@ export default function DesignWorkspace() {
     }));
   };
 
+  // --------------------------------------------------
+  // UPDATE FURNITURE PROPERTY
+  // --------------------------------------------------
+
+  const updateFurniture = (
+    id: string | number,
+    updates: Partial<(typeof project.furniture)[number]>
+  ) => {
+    setProject((current) => ({
+      ...current,
+      furniture: current.furniture.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              ...updates,
+            }
+          : item
+      ),
+    }));
+  };
+
+  // --------------------------------------------------
+  // DELETE
+  // --------------------------------------------------
+
+  const handleDeleteSelected = () => {
+    if (!selectedFurniture) return;
+
+    setProject((current) => ({
+      ...current,
+      furniture: current.furniture.filter(
+        (item) => item.id !== selectedFurniture.id
+      ),
+    }));
+
+    setSelectedId(null);
+  };
+
+  // --------------------------------------------------
+  // DUPLICATE
+  // --------------------------------------------------
+
+  const handleDuplicateSelected = () => {
+    if (!selectedFurniture) return;
+
+    const duplicate = {
+      ...selectedFurniture,
+      id: `${selectedFurniture.id}-copy-${Date.now()}`,
+      x: selectedFurniture.x + 40,
+      y: selectedFurniture.y + 40,
+      locked: false,
+      visible: true,
+    };
+
+    setProject((current) => ({
+      ...current,
+      furniture: [...current.furniture, duplicate],
+    }));
+
+    setSelectedId(duplicate.id);
+  };
+
+  // --------------------------------------------------
+  // LOCK / UNLOCK
+  // --------------------------------------------------
+
+  const handleToggleLock = () => {
+    if (!selectedFurniture) return;
+
+    updateFurniture(selectedFurniture.id, {
+      locked: !selectedFurniture.locked,
+    });
+  };
+
+  // --------------------------------------------------
+  // HIDE / SHOW
+  // --------------------------------------------------
+
+  const handleToggleVisibility = () => {
+    if (!selectedFurniture) return;
+
+    const newVisible = !selectedFurniture.visible;
+
+    updateFurniture(selectedFurniture.id, {
+      visible: newVisible,
+    });
+
+    if (!newVisible) {
+      setSelectedId(null);
+    }
+  };
+
+  // --------------------------------------------------
+  // KEYBOARD SHORTCUTS
+  // --------------------------------------------------
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      if (event.key === "Delete" || event.key === "Backspace") {
+        if (selectedFurniture) {
+          event.preventDefault();
+          handleDeleteSelected();
+        }
+      }
+
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === "d"
+      ) {
+        if (selectedFurniture) {
+          event.preventDefault();
+          handleDuplicateSelected();
+        }
+      }
+
+      if (event.key === "Escape") {
+        setSelectedId(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedFurniture]);
+
+  // --------------------------------------------------
+  // TOOLBAR
+  // --------------------------------------------------
+
   return (
     <div
       style={{
-        width: "100%",
-        minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
+        height: "100vh",
         background: "#f4f4f4",
       }}
     >
-      {/* HEADER */}
-      <header
+      {/* TOP TOOLBAR */}
+      <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "10px",
-          padding: "12px 16px",
-          background: "#20242c",
-          color: "white",
+          gap: "8px",
+          padding: "10px 14px",
+          background: "#ffffff",
+          borderBottom: "1px solid #ddd",
           flexWrap: "wrap",
         }}
       >
-        <strong
-          style={{
-            marginRight: "auto",
-            fontSize: "18px",
-          }}
-        >
-          {project.name || "Untitled Project"}
+        <strong style={{ marginRight: "12px" }}>
+          Design Workspace
         </strong>
 
+        {/* 2D / 3D */}
         <button
-          type="button"
-          onClick={() => {
-            setViewMode("2D");
-            setSelectedId(null);
-          }}
+          onClick={() => setViewMode("2D")}
           style={{
-            padding: "8px 14px",
-            cursor: "pointer",
+            padding: "7px 12px",
             fontWeight: viewMode === "2D" ? "bold" : "normal",
           }}
         >
-          2D View
+          2D
         </button>
 
         <button
-          type="button"
           onClick={() => setViewMode("3D")}
           style={{
-            padding: "8px 14px",
-            cursor: "pointer",
+            padding: "7px 12px",
             fontWeight: viewMode === "3D" ? "bold" : "normal",
           }}
         >
-          3D View
+          3D
         </button>
-      </header>
 
-      {/* 3D TOOLBAR */}
-      {viewMode === "3D" && (
-        <div
+        <span
           style={{
-            display: "flex",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "8px",
-            padding: "10px 16px",
-            background: "#ffffff",
-            borderBottom: "1px solid #d6d6d6",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+            width: "1px",
+            height: "28px",
+            background: "#ddd",
+            margin: "0 6px",
+          }}
+        />
+
+        {/* TRANSFORM */}
+        <button
+          disabled={!selectedFurniture || selectedFurniture.locked}
+          onClick={() => setTransformMode("translate")}
+          style={{
+            padding: "7px 12px",
+            opacity:
+              !selectedFurniture || selectedFurniture.locked
+                ? 0.5
+                : 1,
           }}
         >
-          <strong
-            style={{
-              marginRight: "8px",
-              color: "#333",
-            }}
-          >
-            3D Controls
-          </strong>
+          Move
+        </button>
 
-          {/* TRANSFORM CONTROLS */}
+        <button
+          disabled={!selectedFurniture || selectedFurniture.locked}
+          onClick={() => setTransformMode("rotate")}
+          style={{
+            padding: "7px 12px",
+            opacity:
+              !selectedFurniture || selectedFurniture.locked
+                ? 0.5
+                : 1,
+          }}
+        >
+          Rotate
+        </button>
 
-          <button
-            type="button"
-            onClick={() => setTransformMode("translate")}
-            style={{
-              padding: "7px 12px",
-              cursor: "pointer",
-              fontWeight:
-                transformMode === "translate"
-                  ? "bold"
-                  : "normal",
-            }}
-          >
-            Move
-          </button>
+        {/* DUPLICATE */}
+        <button
+          disabled={!selectedFurniture}
+          onClick={handleDuplicateSelected}
+          style={{
+            padding: "7px 12px",
+            opacity: !selectedFurniture ? 0.5 : 1,
+          }}
+        >
+          Duplicate
+        </button>
 
-          <button
-            type="button"
-            onClick={() => setTransformMode("rotate")}
-            style={{
-              padding: "7px 12px",
-              cursor: "pointer",
-              fontWeight:
-                transformMode === "rotate"
-                  ? "bold"
-                  : "normal",
-            }}
-          >
-            Rotate
-          </button>
+        {/* DELETE */}
+        <button
+          disabled={!selectedFurniture}
+          onClick={handleDeleteSelected}
+          style={{
+            padding: "7px 12px",
+            opacity: !selectedFurniture ? 0.5 : 1,
+          }}
+        >
+          Delete
+        </button>
 
-          <button
-            type="button"
-            onClick={() => setSelectedId(null)}
-            style={{
-              padding: "7px 12px",
-              cursor: "pointer",
-            }}
-          >
-            Deselect
-          </button>
+        {/* LOCK */}
+        <button
+          disabled={!selectedFurniture}
+          onClick={handleToggleLock}
+          style={{
+            padding: "7px 12px",
+            opacity: !selectedFurniture ? 0.5 : 1,
+          }}
+        >
+          {selectedFurniture?.locked ? "Unlock" : "Lock"}
+        </button>
 
-          {/* CAMERA CONTROLS */}
+        {/* VISIBILITY */}
+        <button
+          disabled={!selectedFurniture}
+          onClick={handleToggleVisibility}
+          style={{
+            padding: "7px 12px",
+            opacity: !selectedFurniture ? 0.5 : 1,
+          }}
+        >
+          {selectedFurniture?.visible ? "Hide" : "Show"}
+        </button>
 
-          <span
-            style={{
-              width: "1px",
-              height: "28px",
-              background: "#ccc",
-              margin: "0 5px",
-            }}
-          />
+        {/* DESELECT */}
+        <button
+          disabled={!selectedFurniture}
+          onClick={() => setSelectedId(null)}
+          style={{
+            padding: "7px 12px",
+            opacity: !selectedFurniture ? 0.5 : 1,
+          }}
+        >
+          Deselect
+        </button>
 
-          <strong
-            style={{
-              color: "#333",
-            }}
-          >
-            Camera:
-          </strong>
+        <span
+          style={{
+            width: "1px",
+            height: "28px",
+            background: "#ddd",
+            margin: "0 6px",
+          }}
+        />
 
-          <button
-            type="button"
-            onClick={() => setCameraView("perspective")}
-            style={{
-              padding: "7px 12px",
-              cursor: "pointer",
-              fontWeight:
-                cameraView === "perspective"
-                  ? "bold"
-                  : "normal",
-            }}
-          >
-            Perspective
-          </button>
+        {/* CAMERA */}
+        <button
+          onClick={() => setCameraView("perspective")}
+          style={{
+            padding: "7px 12px",
+            fontWeight:
+              cameraView === "perspective" ? "bold" : "normal",
+          }}
+        >
+          Perspective
+        </button>
 
-          <button
-            type="button"
-            onClick={() => setCameraView("top")}
-            style={{
-              padding: "7px 12px",
-              cursor: "pointer",
-              fontWeight:
-                cameraView === "top"
-                  ? "bold"
-                  : "normal",
-            }}
-          >
-            Top
-          </button>
+        <button
+          onClick={() => setCameraView("top")}
+          style={{
+            padding: "7px 12px",
+            fontWeight: cameraView === "top" ? "bold" : "normal",
+          }}
+        >
+          Top
+        </button>
 
-          <button
-            type="button"
-            onClick={() => setCameraView("front")}
-            style={{
-              padding: "7px 12px",
-              cursor: "pointer",
-              fontWeight:
-                cameraView === "front"
-                  ? "bold"
-                  : "normal",
-            }}
-          >
-            Front
-          </button>
-        </div>
-      )}
+        <button
+          onClick={() => setCameraView("front")}
+          style={{
+            padding: "7px 12px",
+            fontWeight: cameraView === "front" ? "bold" : "normal",
+          }}
+        >
+          Front
+        </button>
+      </div>
 
-      {/* MAIN CONTENT */}
-      <main
+      {/* MAIN AREA */}
+      <div
         style={{
+          display: "flex",
           flex: 1,
-          minHeight: "600px",
-          position: "relative",
+          minHeight: 0,
         }}
       >
-        {viewMode === "2D" ? (
-          <Editor />
-        ) : (
-          <div
-            style={{
-              width: "100%",
-              height: "calc(100vh - 110px)",
-              minHeight: "600px",
-              position: "relative",
-            }}
-          >
+        {/* EDITOR / 3D */}
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            position: "relative",
+          }}
+        >
+          {viewMode === "2D" ? (
+            <Editor />
+          ) : (
             <RoomScene
               furniture={project.furniture}
               selectedId={selectedId}
               transformMode={transformMode}
               cameraView={cameraView}
               onSelect={setSelectedId}
+              onClearSelection={() => setSelectedId(null)}
               onTransformEnd={handleTransformEnd}
             />
-          </div>
-        )}
-      </main>
+          )}
+        </div>
+
+        {/* PROPERTIES PANEL */}
+        {/* PROPERTIES PANEL */}
+{selectedFurniture && (
+  <FurnitureProperties
+    selectedId={selectedId}
+    onClose={() => setSelectedId(null)}
+  />
+)}
+      </div>
     </div>
   );
 }
