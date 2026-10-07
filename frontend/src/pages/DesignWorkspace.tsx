@@ -12,49 +12,27 @@ export default function DesignWorkspace() {
   const { project, setProject } = useProject();
 
   const [viewMode, setViewMode] = useState<ViewMode>("2D");
-  const [selectedId, setSelectedId] = useState<string | number | null>(null);
+  const [selectedId, setSelectedId] = useState<
+    string | number | null
+  >(null);
+
   const [transformMode, setTransformMode] =
     useState<TransformMode>("translate");
 
   const [cameraView, setCameraView] =
     useState<CameraView>("perspective");
 
+  const [roomWidth, setRoomWidth] = useState(800);
+  const [roomDepth, setRoomDepth] = useState(500);
+  const [wallHeight, setWallHeight] = useState(300);
+
   const selectedFurniture = project.furniture.find(
     (item) => item.id === selectedId
   );
 
-  // --------------------------------------------------
-  // 3D TRANSFORM UPDATE
-  // --------------------------------------------------
-
-  const handleTransformEnd = (
-    id: string | number,
-    x: number,
-    y: number,
-    rotation: number
-  ) => {
-    setProject((current) => ({
-      ...current,
-      furniture: current.furniture.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              x,
-              y,
-              rotation,
-            }
-          : item
-      ),
-    }));
-  };
-
-  // --------------------------------------------------
-  // UPDATE FURNITURE PROPERTY
-  // --------------------------------------------------
-
   const updateFurniture = (
     id: string | number,
-    updates: Partial<(typeof project.furniture)[number]>
+    updates: Partial<typeof project.furniture[number]>
   ) => {
     setProject((current) => ({
       ...current,
@@ -69,29 +47,38 @@ export default function DesignWorkspace() {
     }));
   };
 
-  // --------------------------------------------------
-  // DELETE
-  // --------------------------------------------------
+  const handleTransformEnd = (
+    id: string | number,
+    x: number,
+    y: number,
+    rotation: number
+  ) => {
+    updateFurniture(id, {
+      x,
+      y,
+      rotation,
+    });
+  };
 
   const handleDeleteSelected = () => {
-    if (!selectedFurniture) return;
+    if (selectedId === null) {
+      return;
+    }
 
     setProject((current) => ({
       ...current,
       furniture: current.furniture.filter(
-        (item) => item.id !== selectedFurniture.id
+        (item) => item.id !== selectedId
       ),
     }));
 
     setSelectedId(null);
   };
 
-  // --------------------------------------------------
-  // DUPLICATE
-  // --------------------------------------------------
-
   const handleDuplicateSelected = () => {
-    if (!selectedFurniture) return;
+    if (!selectedFurniture) {
+      return;
+    }
 
     const duplicate = {
       ...selectedFurniture,
@@ -110,24 +97,20 @@ export default function DesignWorkspace() {
     setSelectedId(duplicate.id);
   };
 
-  // --------------------------------------------------
-  // LOCK / UNLOCK
-  // --------------------------------------------------
-
   const handleToggleLock = () => {
-    if (!selectedFurniture) return;
+    if (!selectedFurniture) {
+      return;
+    }
 
     updateFurniture(selectedFurniture.id, {
       locked: !selectedFurniture.locked,
     });
   };
 
-  // --------------------------------------------------
-  // HIDE / SHOW
-  // --------------------------------------------------
-
   const handleToggleVisibility = () => {
-    if (!selectedFurniture) return;
+    if (!selectedFurniture) {
+      return;
+    }
 
     const newVisible = !selectedFurniture.visible;
 
@@ -140,37 +123,40 @@ export default function DesignWorkspace() {
     }
   };
 
-  // --------------------------------------------------
-  // KEYBOARD SHORTCUTS
-  // --------------------------------------------------
+  const handleClearSelection = () => {
+    setSelectedId(null);
+  };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement;
+      const target = event.target as HTMLElement | null;
 
       if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.tagName === "SELECT"
       ) {
         return;
-      }
-
-      if (event.key === "Delete" || event.key === "Backspace") {
-        if (selectedFurniture) {
-          event.preventDefault();
-          handleDeleteSelected();
-        }
       }
 
       if (
         (event.ctrlKey || event.metaKey) &&
         event.key.toLowerCase() === "d"
       ) {
-        if (selectedFurniture) {
+        event.preventDefault();
+        handleDuplicateSelected();
+        return;
+      }
+
+      if (
+        event.key === "Delete" ||
+        event.key === "Backspace"
+      ) {
+        if (selectedId !== null) {
           event.preventDefault();
-          handleDuplicateSelected();
+          handleDeleteSelected();
         }
+        return;
       }
 
       if (event.key === "Escape") {
@@ -183,43 +169,36 @@ export default function DesignWorkspace() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [selectedFurniture]);
-
-  // --------------------------------------------------
-  // TOOLBAR
-  // --------------------------------------------------
+  }, [selectedId, selectedFurniture]);
 
   return (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
+        width: "100%",
         height: "100vh",
-        background: "#f4f4f4",
+        overflow: "hidden",
       }}
     >
-      {/* TOP TOOLBAR */}
+      {/* TOOLBAR */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           gap: "8px",
           padding: "10px 14px",
-          background: "#ffffff",
           borderBottom: "1px solid #ddd",
+          background: "#ffffff",
           flexWrap: "wrap",
         }}
       >
-        <strong style={{ marginRight: "12px" }}>
-          Design Workspace
-        </strong>
-
-        {/* 2D / 3D */}
+        {/* VIEW MODE */}
         <button
           onClick={() => setViewMode("2D")}
           style={{
-            padding: "7px 12px",
-            fontWeight: viewMode === "2D" ? "bold" : "normal",
+            padding: "8px 14px",
+            fontWeight: viewMode === "2D" ? 700 : 400,
           }}
         >
           2D
@@ -228,166 +207,156 @@ export default function DesignWorkspace() {
         <button
           onClick={() => setViewMode("3D")}
           style={{
-            padding: "7px 12px",
-            fontWeight: viewMode === "3D" ? "bold" : "normal",
+            padding: "8px 14px",
+            fontWeight: viewMode === "3D" ? 700 : 400,
           }}
         >
           3D
         </button>
 
-        <span
+        <div
           style={{
             width: "1px",
             height: "28px",
             background: "#ddd",
-            margin: "0 6px",
+            margin: "0 4px",
           }}
         />
 
         {/* TRANSFORM */}
         <button
-          disabled={!selectedFurniture || selectedFurniture.locked}
           onClick={() => setTransformMode("translate")}
+          disabled={selectedFurniture?.locked ?? false}
           style={{
-            padding: "7px 12px",
-            opacity:
-              !selectedFurniture || selectedFurniture.locked
-                ? 0.5
-                : 1,
+            padding: "8px 12px",
           }}
         >
           Move
         </button>
 
         <button
-          disabled={!selectedFurniture || selectedFurniture.locked}
           onClick={() => setTransformMode("rotate")}
+          disabled={selectedFurniture?.locked ?? false}
           style={{
-            padding: "7px 12px",
-            opacity:
-              !selectedFurniture || selectedFurniture.locked
-                ? 0.5
-                : 1,
+            padding: "8px 12px",
           }}
         >
           Rotate
         </button>
 
-        {/* DUPLICATE */}
         <button
-          disabled={!selectedFurniture}
           onClick={handleDuplicateSelected}
+          disabled={!selectedFurniture}
           style={{
-            padding: "7px 12px",
-            opacity: !selectedFurniture ? 0.5 : 1,
+            padding: "8px 12px",
           }}
         >
           Duplicate
         </button>
 
-        {/* DELETE */}
         <button
-          disabled={!selectedFurniture}
           onClick={handleDeleteSelected}
+          disabled={!selectedFurniture}
           style={{
-            padding: "7px 12px",
-            opacity: !selectedFurniture ? 0.5 : 1,
+            padding: "8px 12px",
           }}
         >
           Delete
         </button>
 
-        {/* LOCK */}
         <button
-          disabled={!selectedFurniture}
           onClick={handleToggleLock}
+          disabled={!selectedFurniture}
           style={{
-            padding: "7px 12px",
-            opacity: !selectedFurniture ? 0.5 : 1,
+            padding: "8px 12px",
           }}
         >
           {selectedFurniture?.locked ? "Unlock" : "Lock"}
         </button>
 
-        {/* VISIBILITY */}
         <button
-          disabled={!selectedFurniture}
           onClick={handleToggleVisibility}
+          disabled={!selectedFurniture}
           style={{
-            padding: "7px 12px",
-            opacity: !selectedFurniture ? 0.5 : 1,
+            padding: "8px 12px",
           }}
         >
           {selectedFurniture?.visible ? "Hide" : "Show"}
         </button>
 
-        {/* DESELECT */}
         <button
+          onClick={handleClearSelection}
           disabled={!selectedFurniture}
-          onClick={() => setSelectedId(null)}
           style={{
-            padding: "7px 12px",
-            opacity: !selectedFurniture ? 0.5 : 1,
+            padding: "8px 12px",
           }}
         >
           Deselect
         </button>
 
-        <span
-          style={{
-            width: "1px",
-            height: "28px",
-            background: "#ddd",
-            margin: "0 6px",
-          }}
-        />
-
         {/* CAMERA */}
-        <button
-          onClick={() => setCameraView("perspective")}
-          style={{
-            padding: "7px 12px",
-            fontWeight:
-              cameraView === "perspective" ? "bold" : "normal",
-          }}
-        >
-          Perspective
-        </button>
+        {viewMode === "3D" && (
+          <>
+            <div
+              style={{
+                width: "1px",
+                height: "28px",
+                background: "#ddd",
+                margin: "0 4px",
+              }}
+            />
 
-        <button
-          onClick={() => setCameraView("top")}
-          style={{
-            padding: "7px 12px",
-            fontWeight: cameraView === "top" ? "bold" : "normal",
-          }}
-        >
-          Top
-        </button>
+            <button
+              onClick={() => setCameraView("perspective")}
+              style={{
+                padding: "8px 12px",
+                fontWeight:
+                  cameraView === "perspective" ? 700 : 400,
+              }}
+            >
+              Perspective
+            </button>
 
-        <button
-          onClick={() => setCameraView("front")}
-          style={{
-            padding: "7px 12px",
-            fontWeight: cameraView === "front" ? "bold" : "normal",
-          }}
-        >
-          Front
-        </button>
+            <button
+              onClick={() => setCameraView("top")}
+              style={{
+                padding: "8px 12px",
+                fontWeight:
+                  cameraView === "top" ? 700 : 400,
+              }}
+            >
+              Top
+            </button>
+
+            <button
+              onClick={() => setCameraView("front")}
+              style={{
+                padding: "8px 12px",
+                fontWeight:
+                  cameraView === "front" ? 700 : 400,
+              }}
+            >
+              Front
+            </button>
+          </>
+        )}
       </div>
 
-      {/* MAIN AREA */}
+      {/* MAIN CONTENT */}
       <div
         style={{
           display: "flex",
           flex: 1,
           minHeight: 0,
+          overflow: "hidden",
         }}
       >
-        {/* EDITOR / 3D */}
+        {/* EDITOR / 3D VIEW */}
         <div
           style={{
             flex: 1,
             minWidth: 0,
+            minHeight: 0,
             position: "relative",
           }}
         >
@@ -399,21 +368,138 @@ export default function DesignWorkspace() {
               selectedId={selectedId}
               transformMode={transformMode}
               cameraView={cameraView}
+              roomWidth={roomWidth}
+              roomDepth={roomDepth}
+              wallHeight={wallHeight}
               onSelect={setSelectedId}
-              onClearSelection={() => setSelectedId(null)}
+              onClearSelection={handleClearSelection}
               onTransformEnd={handleTransformEnd}
             />
           )}
         </div>
 
-        {/* PROPERTIES PANEL */}
-        {/* PROPERTIES PANEL */}
-{selectedFurniture && (
-  <FurnitureProperties
-    selectedId={selectedId}
-    onClose={() => setSelectedId(null)}
-  />
-)}
+        {/* RIGHT SIDEBAR */}
+        <aside
+          style={{
+            width: "300px",
+            minWidth: "300px",
+            borderLeft: "1px solid #ddd",
+            background: "#fafafa",
+            padding: "16px",
+            boxSizing: "border-box",
+            overflowY: "auto",
+          }}
+        >
+          {/* FURNITURE PROPERTIES */}
+          {selectedFurniture && (
+            <FurnitureProperties
+              selectedId={selectedId}
+              onClose={handleClearSelection}
+            />
+          )}
+
+          {/* ROOM SETTINGS */}
+          <div
+            style={{
+              marginTop: selectedFurniture ? "24px" : "0",
+              borderTop: "1px solid #ddd",
+              paddingTop: "16px",
+            }}
+          >
+            <h3
+              style={{
+                margin: "0 0 16px",
+                fontSize: "18px",
+              }}
+            >
+              Room Settings
+            </h3>
+
+            {/* ROOM WIDTH */}
+            <div style={{ marginBottom: "14px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  marginBottom: "6px",
+                }}
+              >
+                Room Width (cm)
+              </label>
+
+              <input
+                type="number"
+                min="100"
+                value={roomWidth}
+                onChange={(event) =>
+                  setRoomWidth(Number(event.target.value))
+                }
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+
+            {/* ROOM DEPTH */}
+            <div style={{ marginBottom: "14px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  marginBottom: "6px",
+                }}
+              >
+                Room Depth (cm)
+              </label>
+
+              <input
+                type="number"
+                min="100"
+                value={roomDepth}
+                onChange={(event) =>
+                  setRoomDepth(Number(event.target.value))
+                }
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+
+            {/* WALL HEIGHT */}
+            <div style={{ marginBottom: "14px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  marginBottom: "6px",
+                }}
+              >
+                Wall Height (cm)
+              </label>
+
+              <input
+                type="number"
+                min="100"
+                value={wallHeight}
+                onChange={(event) =>
+                  setWallHeight(Number(event.target.value))
+                }
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   );
