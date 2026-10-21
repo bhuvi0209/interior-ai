@@ -1,4 +1,4 @@
-import { Mesh } from "three";
+
 
 interface FurnitureModelProps {
   modelPath: string;

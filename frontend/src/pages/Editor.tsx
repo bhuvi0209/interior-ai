@@ -9,8 +9,6 @@ import LayersPanel from "../components/LayersPanel";
 import { furnitureLibrary } from "../data/furnitureData";
 
 import {
-  ROOM_WIDTH,
-  ROOM_HEIGHT,
   GRID_SIZE,
 } from "../constants/editor";
 
@@ -42,10 +40,15 @@ function getFurnitureEmoji(name: string) {
 // KEEP FURNITURE INSIDE ROOM
 // ---------------------------------------------
 
-function keepInsideRoom(x: number, y: number) {
+function keepInsideRoom(
+  x: number,
+  y: number,
+  roomWidth: number,
+  roomDepth: number
+) {
   return {
-    x: Math.max(0, Math.min(x, ROOM_WIDTH)),
-    y: Math.max(0, Math.min(y, ROOM_HEIGHT)),
+    x: Math.max(0, Math.min(x, roomWidth)),
+    y: Math.max(0, Math.min(y, roomDepth)),
   };
 }
 
@@ -55,51 +58,59 @@ function keepInsideRoom(x: number, y: number) {
 
 function Editor() {
   const {
-  project,
-  setProject,
+    project,
+    setProject,
 
-  undo,
-  redo,
-  canUndo,
-  canRedo,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
 
-  saveProject,
-  loadProject,
-  clearSavedProject,
+    saveProject,
+    loadProject,
+    clearSavedProject,
 
-  exportProject,
-  importProject,
+    exportProject,
+    importProject,
 
-  newProject,
-} = useProject();
+    newProject,
+  } = useProject();
+
+  // ---------------------------------------------
+  // ROOM DIMENSIONS
+  // ---------------------------------------------
+
+  const roomWidth = project.room.width;
+  const roomDepth = project.room.depth;
+
   // ---------------------------------------------
   // SELECTED FURNITURE
   // ---------------------------------------------
 
   const [selectedId, setSelectedId] =
     useState<string | number | null>(null);
+
   const fileInputRef =
-  useRef<HTMLInputElement | null>(
-    null
-  );
+    useRef<HTMLInputElement | null>(null);
+
   const handleImportProject = (
-  event: React.ChangeEvent<HTMLInputElement>
-) => {
-  const file =
-    event.target.files?.[0];
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
 
-  if (!file) {
-    return;
-  }
+    if (!file) {
+      return;
+    }
 
-  importProject(file);
+    importProject(file);
 
-  /*
-   * Reset the input so the same file
-   * can be selected again later.
-   */
-  event.target.value = "";
-};
+    /*
+     * Reset the input so the same file
+     * can be selected again later.
+     */
+    event.target.value = "";
+  };
+
   // DOM element controlled by Moveable
   const [target, setTarget] =
     useState<HTMLElement | null>(null);
@@ -225,7 +236,6 @@ function Editor() {
 
           furniture: [
             ...currentProject.furniture,
-
             {
               ...selectedFurniture,
               id: Date.now(),
@@ -329,14 +339,25 @@ function Editor() {
 
         furniture:
           currentProject.furniture.map(
-            (item) =>
-              item.id === selectedId
-                ? {
-                    ...item,
-                    x: item.x + dx,
-                    y: item.y + dy,
-                  }
-                : item
+            (item) => {
+              if (item.id !== selectedId) {
+                return item;
+              }
+
+              const position =
+                keepInsideRoom(
+                  item.x + dx,
+                  item.y + dy,
+                  currentProject.room.width,
+                  currentProject.room.depth
+                );
+
+              return {
+                ...item,
+                x: position.x,
+                y: position.y,
+              };
+            }
           ),
       }));
     };
@@ -408,9 +429,9 @@ function Editor() {
 
       category: definition.category,
 
-      x: ROOM_WIDTH / 2,
+      x: roomWidth / 2,
 
-      y: ROOM_HEIGHT / 2,
+      y: roomDepth / 2,
 
       rotation: 0,
 
@@ -477,71 +498,75 @@ function Editor() {
         }}
       >
         <button
-  onClick={exportProject}
-  style={{
-    padding: "8px 14px",
-    cursor: "pointer",
-    border: "1px solid #ccc",
-    borderRadius: "5px",
-    background: "#ffffff",
-  }}
->
-  ⬇️ Export
-</button>
-      <button
-  onClick={() =>
-    fileInputRef.current?.click()
-  }
-  style={{
-    padding: "8px 14px",
-    cursor: "pointer",
-    border: "1px solid #ccc",
-    borderRadius: "5px",
-    background: "#ffffff",
-  }}
->
-  ⬆️ Import
-</button>
-<input
-  ref={fileInputRef}
-  type="file"
-  accept=".json,application/json"
-  onChange={handleImportProject}
-  style={{
-    display: "none",
-  }}
-  />
-  <button
-  onClick={newProject}
-  style={{
-    padding: "8px 14px",
-    cursor: "pointer",
-    border: "1px solid #ccc",
-    borderRadius: "5px",
-    background: "#ffffff",
-  }}
->
-  🆕 New
-</button>
+          onClick={exportProject}
+          style={{
+            padding: "8px 14px",
+            cursor: "pointer",
+            border: "1px solid #ccc",
+            borderRadius: "5px",
+            background: "#ffffff",
+          }}
+        >
+          ⬇️ Export
+        </button>
 
-<input
-  value={project.name}
-  onChange={(event) => {
-    setProject((currentProject) => ({
-      ...currentProject,
-      name: event.target.value,
-    }));
-  }}
-  placeholder="Project name"
-  style={{
-    width: "180px",
-    padding: "8px 10px",
-    border: "1px solid #ccc",
-    borderRadius: "5px",
-    fontSize: "14px",
-    outline: "none",
-  }}
-/>
+        <button
+          onClick={() =>
+            fileInputRef.current?.click()
+          }
+          style={{
+            padding: "8px 14px",
+            cursor: "pointer",
+            border: "1px solid #ccc",
+            borderRadius: "5px",
+            background: "#ffffff",
+          }}
+        >
+          ⬆️ Import
+        </button>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          onChange={handleImportProject}
+          style={{
+            display: "none",
+          }}
+        />
+
+        <button
+          onClick={newProject}
+          style={{
+            padding: "8px 14px",
+            cursor: "pointer",
+            border: "1px solid #ccc",
+            borderRadius: "5px",
+            background: "#ffffff",
+          }}
+        >
+          🆕 New
+        </button>
+
+        <input
+          value={project.name}
+          onChange={(event) => {
+            setProject((currentProject) => ({
+              ...currentProject,
+              name: event.target.value,
+            }));
+          }}
+          placeholder="Project name"
+          style={{
+            width: "180px",
+            padding: "8px 10px",
+            border: "1px solid #ccc",
+            borderRadius: "5px",
+            fontSize: "14px",
+            outline: "none",
+          }}
+        />
+
         <button
           type="button"
           onClick={saveProject}
@@ -798,8 +823,8 @@ function Editor() {
                 color: "#666",
               }}
             >
-              Room: {ROOM_WIDTH} ×{" "}
-              {ROOM_HEIGHT}
+              Room: {roomWidth} ×{" "}
+              {roomDepth}
             </div>
 
             {/* ================================= */}
@@ -833,8 +858,8 @@ function Editor() {
                 }
               }}
               style={{
-                width: ROOM_WIDTH,
-                height: ROOM_HEIGHT,
+                width: roomWidth,
+                height: roomDepth,
                 position: "relative",
                 overflow: "hidden",
                 border: "2px solid #333",
@@ -1026,7 +1051,9 @@ function Editor() {
                           snapToGrid(
                             lastEvent.top,
                             GRID_SIZE
-                          )
+                          ),
+                          roomWidth,
+                          roomDepth
                         );
 
                       updateFurniture(

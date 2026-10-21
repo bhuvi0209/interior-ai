@@ -23,13 +23,11 @@ function StyleSelection() {
       return;
     }
 
-    // Save the selected style in ProjectContext
     setProject((prev) => ({
       ...prev,
       style: selectedStyle,
     }));
 
-    // Navigate to the furniture window
     navigate("/furniture");
   };
 
@@ -57,14 +55,7 @@ function StyleSelection() {
           <button
             key={style}
             type="button"
-            onClick={() => {
-              setSelectedStyle(style);
-
-              setProject((prev) => ({
-                ...prev,
-                style: style,
-              }));
-            }}
+            onClick={() => setSelectedStyle(style)}
             style={{
               padding: "20px 30px",
               borderRadius: "10px",
