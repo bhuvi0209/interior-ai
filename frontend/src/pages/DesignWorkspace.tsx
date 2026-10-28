@@ -7,9 +7,10 @@ import FurnitureProperties from "../components/FurnitureProperties";
 import RoomScene from "../3d/RoomScene";
 
 import { useProject } from "../context/ProjectContext";
-
+import FurnitureArrangementScore from "../components/FurnitureArrangementScore";
+import FurnitureCollisionDetector from "../components/FurnitureCollisionDetector";
 import RoomPresets from "../components/RoomPresets";
-
+import FurnitureArrangementValidator from "../components/FurnitureArrangementValidator";
 import type { RoomPreset } from "../types/RoomPreset";
 import FurnitureSpaceChecker from "../components/FurnitureSpaceChecker";
 type ViewMode = "2D" | "3D";
@@ -865,7 +866,18 @@ export default function DesignWorkspace() {
               Room Settings
 
             </h3>
-
+<FurnitureCollisionDetector
+  currentRoom={project.room}
+  furniture={project.furniture}
+/>
+<FurnitureArrangementValidator
+  currentRoom={project.room}
+  furniture={project.furniture}
+/>
+<FurnitureArrangementScore
+  currentRoom={project.room}
+  furniture={project.furniture}
+/>
   <RoomPresets
   currentRoom={project.room}
   onApply={handleApplyPreset}
