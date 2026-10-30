@@ -1,18 +1,22 @@
 import { useEffect, useState } from "react";
-
+import FurnitureBudgetAlerts from "../components/FurnitureBudgetAlerts";
 import Editor from "./Editor";
-
+import FurnitureBudgetBreakdown from "../components/FurnitureBudgetBreakdown";
 import FurnitureProperties from "../components/FurnitureProperties";
-
+import FurnitureBudgetEstimator from "../components/FurnitureBudgetEstimator";
 import RoomScene from "../3d/RoomScene";
-
+import FurnitureLayoutReport from "../components/FurnitureLayoutReport";
 import { useProject } from "../context/ProjectContext";
+import FurnitureArrangementOptimizer from "../components/FurnitureArrangementOptimizer";
 import FurnitureArrangementScore from "../components/FurnitureArrangementScore";
 import FurnitureCollisionDetector from "../components/FurnitureCollisionDetector";
 import RoomPresets from "../components/RoomPresets";
 import FurnitureArrangementValidator from "../components/FurnitureArrangementValidator";
 import type { RoomPreset } from "../types/RoomPreset";
 import FurnitureSpaceChecker from "../components/FurnitureSpaceChecker";
+import FurnitureMaintenanceTracker from "../components/FurnitureMaintenanceTracker";
+import FurnitureWarrantyTracker from "../components/FurnitureWarrantyTracker";
+import FurnitureInventoryTracker from "../components/FurnitureInventoryTracker";
 type ViewMode = "2D" | "3D";
 
 type TransformMode = "translate" | "rotate";
@@ -866,6 +870,21 @@ export default function DesignWorkspace() {
               Room Settings
 
             </h3>
+<FurnitureBudgetEstimator furniture={project.furniture} />
+<FurnitureBudgetBreakdown furniture={project.furniture} />
+<FurnitureBudgetAlerts furniture={project.furniture} />
+<FurnitureMaintenanceTracker furniture={project.furniture} />
+<FurnitureWarrantyTracker furniture={project.furniture} />
+<FurnitureInventoryTracker furniture={project.furniture} />
+<FurnitureArrangementOptimizer
+  currentRoom={project.room}
+  furniture={project.furniture}
+  onApplyPosition={() => {}}
+/>
+<FurnitureLayoutReport
+  currentRoom={project.room}
+  furniture={project.furniture}
+/>
 <FurnitureCollisionDetector
   currentRoom={project.room}
   furniture={project.furniture}
