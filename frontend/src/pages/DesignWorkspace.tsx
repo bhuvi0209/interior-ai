@@ -17,6 +17,7 @@ import FurnitureSpaceChecker from "../components/FurnitureSpaceChecker";
 import FurnitureMaintenanceTracker from "../components/FurnitureMaintenanceTracker";
 import FurnitureWarrantyTracker from "../components/FurnitureWarrantyTracker";
 import FurnitureInventoryTracker from "../components/FurnitureInventoryTracker";
+import FurnitureShoppingList from "../components/FurnitureShoppingList";
 type ViewMode = "2D" | "3D";
 
 type TransformMode = "translate" | "rotate";
@@ -876,6 +877,7 @@ export default function DesignWorkspace() {
 <FurnitureMaintenanceTracker furniture={project.furniture} />
 <FurnitureWarrantyTracker furniture={project.furniture} />
 <FurnitureInventoryTracker furniture={project.furniture} />
+<FurnitureShoppingList />
 <FurnitureArrangementOptimizer
   currentRoom={project.room}
   furniture={project.furniture}
