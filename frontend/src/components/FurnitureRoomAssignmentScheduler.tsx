@@ -92,9 +92,7 @@ function FurnitureRoomAssignmentScheduler({ furniture }: Props) {
     }
   }, [tasks, rooms]);
 
-  const selectedFurniture = furniture.find(
-    (item) => String(item.id) === furnitureId
-  );
+
 
   const resetForm = () => {
     setFurnitureId("");
