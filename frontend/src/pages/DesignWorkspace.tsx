@@ -26,6 +26,7 @@ import FurnitureRoomAnalytics from "../components/FurnitureRoomAnalytics";
 import FurnitureRoomActivityHistory from "../components/FurnitureRoomActivityHistory";
 import FurnitureRoomNotifications from "../components/FurnitureRoomNotifications";
 import FurnitureRoomAssignmentScheduler from "../components/FurnitureRoomAssignmentScheduler";
+import FurnitureRoomAssignmentConflictChecker from "../components/FurnitureRoomAssignmentConflictChecker";
 type ViewMode = "2D" | "3D";
 
 type TransformMode = "translate" | "rotate";
@@ -894,6 +895,9 @@ export default function DesignWorkspace() {
 <FurnitureRoomActivityHistory furniture={project.furniture} />
 <FurnitureRoomNotifications furniture={project.furniture} />
 <FurnitureRoomAssignmentScheduler furniture={project.furniture} />
+<FurnitureRoomAssignmentConflictChecker
+  furniture={project.furniture}
+/>
 <FurnitureArrangementOptimizer
   currentRoom={project.room}
   furniture={project.furniture}
