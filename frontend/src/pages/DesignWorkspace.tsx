@@ -29,6 +29,7 @@ import FurnitureRoomAssignmentScheduler from "../components/FurnitureRoomAssignm
 import FurnitureRoomAssignmentConflictChecker from "../components/FurnitureRoomAssignmentConflictChecker";
 import FurnitureRoomAssignmentTimeline from "../components/FurnitureRoomAssignmentTimeline";
 import FurnitureRoomAssignmentCalendar from "../components/FurnitureRoomAssignmentCalendar";
+import FurnitureRoomAssignmentCalendarAnalytics from "../components/FurnitureRoomAssignmentCalendarAnalytics";
 type ViewMode = "2D" | "3D";
 
 type TransformMode = "translate" | "rotate";
@@ -925,6 +926,9 @@ export default function DesignWorkspace() {
 />
 <FurnitureArrangementScore
   currentRoom={project.room}
+  furniture={project.furniture}
+/>
+<FurnitureRoomAssignmentCalendarAnalytics
   furniture={project.furniture}
 />
   <RoomPresets
