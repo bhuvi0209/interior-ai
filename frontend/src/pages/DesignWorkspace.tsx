@@ -35,6 +35,7 @@ import FurnitureRoomAssignmentSync from "../components/FurnitureRoomAssignmentSy
 import FurnitureRoomAssignmentAudit from "../components/FurnitureRoomAssignmentAudit";
 import FurnitureRoomAssignmentActivityDashboard from "../components/FurnitureRoomAssignmentActivityDashboard";
 import FurnitureRoomMovementInsights from "../components/FurnitureRoomMovementInsights";
+import FurnitureRoomMovementForecast from "../components/FurnitureRoomMovementForecast";
 type ViewMode = "2D" | "3D";
 
 type TransformMode = "translate" | "rotate";
@@ -939,6 +940,7 @@ export default function DesignWorkspace() {
   furniture={project.furniture}
 />
 <FurnitureRoomAssignmentInsightsDashboard furniture={project.furniture} />
+<FurnitureRoomMovementForecast furniture={project.furniture} />
   <RoomPresets
   currentRoom={project.room}
   onApply={handleApplyPreset}
