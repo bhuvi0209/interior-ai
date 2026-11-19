@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 
@@ -35,15 +34,8 @@ const styles: Record<string, CSSProperties> = {
     fontFamily: "Arial, sans-serif",
     color: "#222",
   },
-  heading: {
-    fontSize: "26px",
-    marginBottom: "8px",
-  },
-  description: {
-    color: "#666",
-    lineHeight: 1.6,
-    marginBottom: "22px",
-  },
+  heading: { fontSize: "26px", marginBottom: "8px" },
+  description: { color: "#666", lineHeight: 1.6, marginBottom: "22px" },
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(155px, 1fr))",
@@ -56,15 +48,8 @@ const styles: Record<string, CSSProperties> = {
     padding: "17px",
     background: "#fff",
   },
-  cardLabel: {
-    color: "#666",
-    fontSize: "14px",
-  },
-  cardValue: {
-    fontSize: "27px",
-    fontWeight: 700,
-    marginTop: "10px",
-  },
+  cardLabel: { color: "#666", fontSize: "14px" },
+  cardValue: { fontSize: "27px", fontWeight: 700, marginTop: "10px" },
   section: {
     border: "1px solid #ddd",
     borderRadius: "10px",
@@ -72,11 +57,7 @@ const styles: Record<string, CSSProperties> = {
     marginBottom: "20px",
     background: "#fff",
   },
-  sectionTitle: {
-    fontSize: "19px",
-    marginTop: 0,
-    marginBottom: "16px",
-  },
+  sectionTitle: { fontSize: "19px", marginTop: 0, marginBottom: "16px" },
   progressBackground: {
     height: "13px",
     background: "#e5e7eb",
@@ -106,11 +87,7 @@ const styles: Record<string, CSSProperties> = {
     flex: 1,
     minWidth: "100px",
   },
-  barFill: {
-    height: "100%",
-    background: "#64748b",
-    borderRadius: "20px",
-  },
+  barFill: { height: "100%", background: "#64748b", borderRadius: "20px" },
   input: {
     padding: "10px",
     border: "1px solid #ccc",
@@ -127,35 +104,23 @@ const styles: Record<string, CSSProperties> = {
     cursor: "pointer",
     fontWeight: 600,
   },
-  tableWrapper: {
-    overflowX: "auto",
-    width: "100%",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    minWidth: "650px",
-  },
+  tableWrapper: { overflowX: "auto", width: "100%" },
+  table: { width: "100%", borderCollapse: "collapse", minWidth: "650px" },
   cell: {
     padding: "11px",
     borderBottom: "1px solid #eee",
     textAlign: "left",
     fontSize: "14px",
   },
-  muted: {
-    color: "#777",
-    fontSize: "13px",
-  },
+  muted: { color: "#777", fontSize: "13px" },
 };
 
 function readActions(): ReviewAction[] {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-
     if (!saved) return [];
 
     const parsed: unknown = JSON.parse(saved);
-
     if (!Array.isArray(parsed)) return [];
 
     return parsed.filter((item): item is ReviewAction => {
@@ -163,20 +128,24 @@ function readActions(): ReviewAction[] {
         item !== null &&
         typeof item === "object" &&
         typeof item.id === "string" &&
-        typeof item.furnitureId === "string" &&
+        (typeof item.furnitureId === "string" ||
+          typeof item.furnitureId === "number") &&
         typeof item.furnitureName === "string" &&
         typeof item.title === "string" &&
         typeof item.notes === "string" &&
-        ["Pending", "Accepted", "Rejected", "Completed"].includes(
-          item.status
-        ) &&
+        ["Pending", "Accepted", "Rejected", "Completed"].includes(item.status) &&
         typeof item.createdAt === "string" &&
         typeof item.updatedAt === "string"
       );
-    });
-  } catch {
+    }).map((item) => ({ ...item, furnitureId: String(item.furnitureId) }));
+  } catch (error) {
+    console.error("Could not read furniture action records:", error);
     return [];
   }
+}
+
+function csvEscape(value: string | number): string {
+  return `"${String(value ?? "").replace(/"/g, '""')}"`;
 }
 
 function FurnitureRoomAssignmentActionAnalytics() {
@@ -184,6 +153,7 @@ function FurnitureRoomAssignmentActionAnalytics() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [periodFilter, setPeriodFilter] = useState("All");
+  const [exportMessage, setExportMessage] = useState("");
 
   useEffect(() => {
     setActions(readActions());
@@ -193,8 +163,7 @@ function FurnitureRoomAssignmentActionAnalytics() {
     const now = new Date();
 
     return actions.filter((action) => {
-      const text = search.toLowerCase();
-
+      const text = search.trim().toLowerCase();
       const matchesSearch =
         action.furnitureName.toLowerCase().includes(text) ||
         action.title.toLowerCase().includes(text) ||
@@ -206,21 +175,16 @@ function FurnitureRoomAssignmentActionAnalytics() {
       const createdDate = new Date(action.createdAt);
       let matchesPeriod = true;
 
-      if (!Number.isNaN(createdDate.getTime())) {
-        if (periodFilter === "30 Days") {
-          matchesPeriod =
-            createdDate >=
-            new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        } else if (periodFilter === "90 Days") {
-          matchesPeriod =
-            createdDate >=
-            new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-        } else if (periodFilter === "This Year") {
-          matchesPeriod =
-            createdDate.getFullYear() === now.getFullYear();
-        }
-      } else if (periodFilter !== "All") {
-        matchesPeriod = false;
+      if (Number.isNaN(createdDate.getTime())) {
+        matchesPeriod = periodFilter === "All";
+      } else if (periodFilter === "30 Days") {
+        matchesPeriod =
+          createdDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      } else if (periodFilter === "90 Days") {
+        matchesPeriod =
+          createdDate >= new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      } else if (periodFilter === "This Year") {
+        matchesPeriod = createdDate.getFullYear() === now.getFullYear();
       }
 
       return matchesSearch && matchesStatus && matchesPeriod;
@@ -228,7 +192,6 @@ function FurnitureRoomAssignmentActionAnalytics() {
   }, [actions, search, statusFilter, periodFilter]);
 
   const total = filteredActions.length;
-
   const countStatus = (status: ActionStatus) =>
     filteredActions.filter((action) => action.status === status).length;
 
@@ -236,9 +199,7 @@ function FurnitureRoomAssignmentActionAnalytics() {
   const accepted = countStatus("Accepted");
   const rejected = countStatus("Rejected");
   const completed = countStatus("Completed");
-
-  const completionRate =
-    total > 0 ? Math.round((completed / total) * 100) : 0;
+  const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   const furnitureSummary = useMemo(() => {
     const grouped = new Map<string, FurnitureActionSummary>();
@@ -259,18 +220,14 @@ function FurnitureRoomAssignmentActionAnalytics() {
       }
 
       const summary = grouped.get(id)!;
-
       summary.total += 1;
-
       if (action.status === "Pending") summary.pending += 1;
       if (action.status === "Accepted") summary.accepted += 1;
       if (action.status === "Rejected") summary.rejected += 1;
       if (action.status === "Completed") summary.completed += 1;
     });
 
-    return Array.from(grouped.values()).sort(
-      (a, b) => b.total - a.total
-    );
+    return Array.from(grouped.values()).sort((a, b) => b.total - a.total);
   }, [filteredActions]);
 
   const mostReviewed = furnitureSummary[0];
@@ -280,19 +237,16 @@ function FurnitureRoomAssignmentActionAnalytics() {
 
     filteredActions.forEach((action) => {
       const date = new Date(action.createdAt);
-
       if (Number.isNaN(date.getTime())) return;
 
       const key = date.toLocaleDateString();
-
       grouped.set(key, (grouped.get(key) || 0) + 1);
     });
 
     return Array.from(grouped.entries())
       .map(([date, count]) => ({ date, count }))
       .sort(
-        (a, b) =>
-          new Date(a.date).getTime() - new Date(b.date).getTime()
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
       )
       .slice(-10);
   }, [filteredActions]);
@@ -303,78 +257,92 @@ function FurnitureRoomAssignmentActionAnalytics() {
   );
 
   function exportCSV() {
-    const headers = [
-      "Furniture ID",
-      "Furniture Name",
-      "Action Title",
-      "Notes",
-      "Status",
-      "Created At",
-      "Updated At",
-    ];
+    if (filteredActions.length === 0) {
+      setExportMessage("No action records match the current filters.");
+      return;
+    }
 
-    const escapeCSV = (value: string) =>
-      `"${String(value).replace(/"/g, '""')}"`;
+    try {
+      const headers = [
+        "Furniture ID",
+        "Furniture Name",
+        "Action Title",
+        "Notes",
+        "Status",
+        "Created At",
+        "Updated At",
+      ];
 
-    const rows = filteredActions.map((action) =>
-      [
-        action.furnitureId,
-        action.furnitureName,
-        action.title,
-        action.notes,
-        action.status,
-        action.createdAt,
-        action.updatedAt,
-      ]
-        .map(escapeCSV)
-        .join(",")
-    );
+      const rows = filteredActions.map((action) =>
+        [
+          action.furnitureId,
+          action.furnitureName,
+          action.title,
+          action.notes,
+          action.status,
+          action.createdAt,
+          action.updatedAt,
+        ]
+          .map(csvEscape)
+          .join(",")
+      );
 
-    const csv = [
-      headers.map(escapeCSV).join(","),
-      ...rows,
-    ].join("\n");
+      const csvContent =
+        "\uFEFF" + [headers.map(csvEscape).join(","), ...rows].join("\r\n");
 
-    const blob = new Blob([csv], {
-      type: "text/csv;charset=utf-8;",
-    });
+      const blob = new Blob([csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `furniture-action-analytics-${new Date()
+        .toISOString()
+        .slice(0, 10)}.csv`;
+      link.style.display = "none";
 
-    link.href = url;
-    link.download = "furniture-room-action-analytics.csv";
-    link.click();
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-    URL.revokeObjectURL(url);
+      window.setTimeout(() => {
+        window.URL.revokeObjectURL(downloadUrl);
+      }, 1000);
+
+      setExportMessage(
+        `Export started for ${filteredActions.length} record(s). Check your browser Downloads.`
+      );
+    } catch (error) {
+      console.error("CSV export failed:", error);
+      setExportMessage("CSV export failed. Open the browser Console for details.");
+    }
   }
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.heading}>
-        Furniture Room Assignment Action Analytics
-      </h2>
-
+      <h2 style={styles.heading}>Furniture Room Assignment Action Analytics</h2>
       <p style={styles.description}>
-        Analyze your Day 95 review actions, track decision progress,
-        and understand which furniture items receive the most attention.
+        Analyze your Day 95 review actions, track decision progress, and
+        understand which furniture items receive the most attention.
       </p>
 
       <section style={styles.section}>
         <h3 style={styles.sectionTitle}>Analytics Filters</h3>
-
         <div style={styles.row}>
           <input
             style={{ ...styles.input, flex: "1 1 220px" }}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search furniture or action..."
+            aria-label="Search furniture or action"
           />
 
           <select
             style={styles.input}
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
+            aria-label="Filter by status"
           >
             <option value="All">All statuses</option>
             <option value="Pending">Pending</option>
@@ -387,6 +355,7 @@ function FurnitureRoomAssignmentActionAnalytics() {
             style={styles.input}
             value={periodFilter}
             onChange={(event) => setPeriodFilter(event.target.value)}
+            aria-label="Filter by period"
           >
             <option value="All">All time</option>
             <option value="30 Days">Last 30 days</option>
@@ -396,63 +365,55 @@ function FurnitureRoomAssignmentActionAnalytics() {
 
           <button
             type="button"
-            style={styles.button}
+            style={{
+              ...styles.button,
+              opacity: filteredActions.length === 0 ? 0.55 : 1,
+              cursor: filteredActions.length === 0 ? "not-allowed" : "pointer",
+            }}
             onClick={exportCSV}
             disabled={filteredActions.length === 0}
           >
-            Export CSV
+            Export CSV ({filteredActions.length})
           </button>
         </div>
 
         <p style={styles.muted}>
-          Analytics below use the selected filters.
+          Analytics and CSV export both use the records matching the selected
+          filters.
         </p>
+        {exportMessage && (
+          <p role="status" aria-live="polite" style={{ color: "#2563eb" }}>
+            {exportMessage}
+          </p>
+        )}
       </section>
 
       <div style={styles.grid}>
-        <div style={styles.card}>
-          <div style={styles.cardLabel}>Total Actions</div>
-          <div style={styles.cardValue}>{total}</div>
-        </div>
-
-        <div style={styles.card}>
-          <div style={styles.cardLabel}>Pending</div>
-          <div style={styles.cardValue}>{pending}</div>
-        </div>
-
-        <div style={styles.card}>
-          <div style={styles.cardLabel}>Accepted</div>
-          <div style={styles.cardValue}>{accepted}</div>
-        </div>
-
-        <div style={styles.card}>
-          <div style={styles.cardLabel}>Rejected</div>
-          <div style={styles.cardValue}>{rejected}</div>
-        </div>
-
-        <div style={styles.card}>
-          <div style={styles.cardLabel}>Completed</div>
-          <div style={styles.cardValue}>{completed}</div>
-        </div>
+        {[
+          ["Total Actions", total],
+          ["Pending", pending],
+          ["Accepted", accepted],
+          ["Rejected", rejected],
+          ["Completed", completed],
+        ].map(([label, value]) => (
+          <div style={styles.card} key={label}>
+            <div style={styles.cardLabel}>{label}</div>
+            <div style={styles.cardValue}>{value}</div>
+          </div>
+        ))}
       </div>
 
       <section style={styles.section}>
         <h3 style={styles.sectionTitle}>Completion Progress</h3>
-
         <div style={styles.row}>
           <strong>Completed actions</strong>
           <strong>{completionRate}%</strong>
         </div>
-
         <div style={styles.progressBackground}>
           <div
-            style={{
-              ...styles.progressFill,
-              width: `${completionRate}%`,
-            }}
+            style={{ ...styles.progressFill, width: `${completionRate}%` }}
           />
         </div>
-
         <p style={styles.muted}>
           {completed} of {total} filtered actions are marked Completed.
         </p>
@@ -460,7 +421,6 @@ function FurnitureRoomAssignmentActionAnalytics() {
 
       <section style={styles.section}>
         <h3 style={styles.sectionTitle}>Action Status Distribution</h3>
-
         {(
           [
             ["Pending", pending],
@@ -471,7 +431,6 @@ function FurnitureRoomAssignmentActionAnalytics() {
         ).map(([label, count]) => (
           <div key={label} style={styles.row}>
             <span style={{ width: "100px" }}>{label}</span>
-
             <div style={styles.barBackground}>
               <div
                 style={{
@@ -480,17 +439,13 @@ function FurnitureRoomAssignmentActionAnalytics() {
                 }}
               />
             </div>
-
             <strong>{count}</strong>
           </div>
         ))}
       </section>
 
       <section style={styles.section}>
-        <h3 style={styles.sectionTitle}>
-          Furniture Action Breakdown
-        </h3>
-
+        <h3 style={styles.sectionTitle}>Furniture Action Breakdown</h3>
         {furnitureSummary.length === 0 ? (
           <p>No furniture action records found.</p>
         ) : (
@@ -506,7 +461,6 @@ function FurnitureRoomAssignmentActionAnalytics() {
                   <th style={styles.cell}>Completed</th>
                 </tr>
               </thead>
-
               <tbody>
                 {furnitureSummary.map((item) => (
                   <tr key={item.furnitureId}>
@@ -526,13 +480,12 @@ function FurnitureRoomAssignmentActionAnalytics() {
 
       <section style={styles.section}>
         <h3 style={styles.sectionTitle}>Most Reviewed Furniture</h3>
-
         {mostReviewed ? (
           <>
             <h2>{mostReviewed.furnitureName}</h2>
             <p>
-              This furniture has {mostReviewed.total} action records
-              in the selected period.
+              This furniture has {mostReviewed.total} action records in the
+              selected period.
             </p>
           </>
         ) : (
@@ -542,14 +495,12 @@ function FurnitureRoomAssignmentActionAnalytics() {
 
       <section style={styles.section}>
         <h3 style={styles.sectionTitle}>Recent Daily Activity</h3>
-
         {dailyActivity.length === 0 ? (
           <p>No dated action activity is available.</p>
         ) : (
           dailyActivity.map((item) => (
             <div key={item.date} style={styles.row}>
               <span style={{ width: "120px" }}>{item.date}</span>
-
               <div style={styles.barBackground}>
                 <div
                   style={{
@@ -560,7 +511,6 @@ function FurnitureRoomAssignmentActionAnalytics() {
                   }}
                 />
               </div>
-
               <strong>{item.count}</strong>
             </div>
           ))
@@ -569,35 +519,24 @@ function FurnitureRoomAssignmentActionAnalytics() {
 
       <section style={styles.section}>
         <h3 style={styles.sectionTitle}>Action Insights</h3>
-
         {total === 0 ? (
           <p>Create Day 95 actions to start generating analytics.</p>
         ) : (
           <ul>
+            <li>{pending} actions are waiting for a decision.</li>
+            <li>{accepted} actions have been accepted.</li>
+            <li>{rejected} actions have been rejected.</li>
+            <li>{completed} actions have been completed.</li>
             <li>
-              {pending} actions are still waiting for a decision.
-            </li>
-            <li>
-              {accepted} actions have been accepted.
-            </li>
-            <li>
-              {rejected} actions have been rejected.
-            </li>
-            <li>
-              {completed} actions have been completed.
-            </li>
-            <li>
-              {furnitureSummary.length} furniture items have recorded
-              actions.
+              {furnitureSummary.length} furniture items have recorded actions.
             </li>
           </ul>
         )}
       </section>
 
       <p style={styles.muted}>
-        This dashboard reads the Day 95 localStorage records. It is
-        an analytics-only feature and does not change furniture
-        assignments or action statuses.
+        This dashboard reads the Day 95 localStorage records. It does not
+        change furniture assignments or action statuses.
       </p>
     </div>
   );
