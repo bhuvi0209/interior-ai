@@ -44,6 +44,7 @@ import FurnitureRoomAssignmentActionAnalytics from "../components/FurnitureRoomA
 import FurnitureRoomAssignmentActionPerformance from "../components/FurnitureRoomAssignmentActionPerformance";
 import FurnitureRoomAssignmentRecommendationEngine from "../components/FurnitureRoomAssignmentRecommendationEngine";
 import FurnitureRoomRecommendationHistory from "../components/FurnitureRoomRecommendationHistory";
+import FurnitureRoomAssignmentMasterDashboard from "../components/FurnitureRoomAssignmentMasterDashboard";
 type ViewMode = "2D" | "3D";
 
 type TransformMode = "translate" | "rotate";
@@ -961,6 +962,9 @@ export default function DesignWorkspace() {
 <FurnitureRoomAssignmentActionPerformance />
 <FurnitureRoomAssignmentRecommendationEngine />
 <FurnitureRoomRecommendationHistory />
+<FurnitureRoomAssignmentMasterDashboard
+  furniture={project.furniture}
+/>
   <RoomPresets
   currentRoom={project.room}
   onApply={handleApplyPreset}
