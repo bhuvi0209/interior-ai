@@ -51,6 +51,7 @@ import FurnitureRoomAssignmentOptimizationScore from "../components/FurnitureRoo
 import FurnitureRoomAssignmentOptimizationReport from "../components/FurnitureRoomAssignmentOptimizationReport";
 import FurnitureRoomAssignmentOptimizationHistory from "../components/FurnitureRoomAssignmentOptimizationHistory";
 import FurnitureRoomAssignmentOptimizationTrends from "../components/FurnitureRoomAssignmentOptimizationTrends";
+import FurnitureRoomAssignmentOptimizationGoals from "../components/FurnitureRoomAssignmentOptimizationGoals";
 type ViewMode = "2D" | "3D";
 
 type TransformMode = "translate" | "rotate";
@@ -987,6 +988,9 @@ export default function DesignWorkspace() {
   furniture={project.furniture}
 />
 <FurnitureRoomAssignmentOptimizationTrends
+  furniture={project.furniture}
+/>
+<FurnitureRoomAssignmentOptimizationGoals
   furniture={project.furniture}
 />
   <RoomPresets
